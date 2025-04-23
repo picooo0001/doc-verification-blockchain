@@ -1,0 +1,18 @@
+# Node.js/JS
+node_modules/
+dist/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+
+# Solidity / Hardhat / Truffle
+build/
+artifacts/
+cache/
+
+# IDE-Dateien
+.vscode/
+.DS_Store
