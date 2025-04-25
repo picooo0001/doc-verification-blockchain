@@ -3,20 +3,24 @@
     <h1>PDF Signieren</h1>
     <p class="subtitle">Lade ein oder mehrere PDF-Dateien hoch, um sie mit der Blockchain zu verknüpfen.</p>
 
-    <FileUpload
-      name="demo[]"
-      url="/api/upload"
-      @upload="onAdvancedUpload"
-      :multiple="true"
-      accept="application/pdf"
-      :maxFileSize="1000000"
-    >
-      <template #empty>
-        <div class="upload-placeholder">
-          <span>Drag and drop PDFs here to upload</span>
-        </div>
-      </template>
-    </FileUpload>
+    <div class="file-upload-wrapper">
+  <FileUpload
+    name="demo[]"
+    url="/api/upload"
+    @upload="onAdvancedUpload"
+    :multiple="true"
+    accept="application/pdf"
+    :maxFileSize="1000000"
+    :showUploadButton="false"
+    :showCancelButton="false"
+  >
+    <template #empty>
+      <div class="upload-placeholder">
+        <span>Drag and drop PDFs here to upload</span>
+      </div>
+    </template>
+  </FileUpload>
+</div>
 
     <!-- Button wird nur angezeigt, wenn PDF-Dateien hochgeladen wurden -->
     <div v-if="pdfFiles.length > 0" class="action-container">
@@ -57,6 +61,15 @@ function signWithBlockchain() {
 </script>
 
 <style scoped>
+
+.file-upload-wrapper {
+  max-width: 300px; /* oder 250px je nach Look */
+  margin: 0 auto; /* zentriert */
+}
+
+.p-fileupload {
+  width: 100%;
+}
 .sign-container {
   max-width: 700px;
   margin: 3rem auto;

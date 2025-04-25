@@ -20,6 +20,10 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   height: 80px;
   border-radius: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
 .logo {
@@ -63,7 +67,7 @@
   background-color: #cfcfcf;
 }
 .router-link-exact-active {
-  background-color: #e0e0e0; /* Dauerhaft ausgegrauter Hintergrund */
+  background-color: #f0f0f0; /* Dauerhaft ausgegrauter Hintergrund */
   border-radius: 8px;
 }
 </style>

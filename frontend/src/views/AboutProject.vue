@@ -1,10 +1,16 @@
 <template>
   <div class="about-container">
     <h1>Über dieses Projekt</h1>
-    <p>
-      Dieses Projekt mit dem Arbeitstitel <strong>„Blockchain-basierte Dokumentenverifikation und Notarisierung“</strong> befasst sich mit der Entwicklung eines webbasierten Prototyps, der die Integrität und Echtheit digitaler Dokumente mithilfe der Blockchain-Technologie sicherstellt. Im Zentrum steht die Signierung und Verifikation von PDF-Dokumenten über Smart Contracts auf einer Ethereum-Test-Blockchain.
-    </p>
 
+    <!-- 🔽 Download-Buttons -->
+    <div class="download-buttons">
+      <a href="/downloads/seminararbeit.pdf" download class="download-btn">📄 Seminararbeit herunterladen</a>
+      <a href="/downloads/praesentation.pdf" download class="download-btn">📊 Präsentation herunterladen</a>
+    </div>
+
+    <p>
+      Dieses Projekt mit dem Arbeitstitel <strong>„Blockchain-basierte Dokumentenverifikation und Notarisierung“</strong> befasst sich mit der Entwicklung eines webbasierten Prototyps [...]
+    </p>
     <h2>Einleitung</h2>
     <p>
       Die Blockchain-Technologie gewinnt zunehmend an Bedeutung im Bereich der Cyber-Security. Insbesondere für Szenarien wie Dokumentenverifikation und Notarisierung bietet sie Vorteile wie Transparenz, Unveränderbarkeit und Dezentralität. Dieses Projekt nutzt genau diese Eigenschaften, um einen Prototypen zur sicheren Dokumentensignatur zu realisieren.
@@ -63,5 +69,29 @@
 .about-container p, li {
   font-size: 1.125rem;
   line-height: 1.6;
+}.download-buttons {
+  display: flex;
+  flex-direction: row; /* nebeneinander */
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap; /* falls bei kleinen Bildschirmen nötig */
 }
+
+.download-btn {
+  flex: 1 1 auto;
+  padding: 0.75rem 1.5rem;
+  background-color: #4f46e5; /* Indigo */
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 8px;
+  text-align: center;
+  transition: background-color 0.3s ease;
+  min-width: 200px;
+}
+
+.download-btn:hover {
+  background-color: #6366f1;
+}
+
 </style>
