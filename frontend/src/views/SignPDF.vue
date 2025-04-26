@@ -4,29 +4,28 @@
     <p class="subtitle">Lade ein oder mehrere PDF-Dateien hoch, um sie mit der Blockchain zu verknüpfen.</p>
 
     <div class="file-upload-wrapper">
-  <FileUpload
-    name="demo[]"
-    url="/api/upload"
-    @upload="onAdvancedUpload"
-    :multiple="true"
-    accept="application/pdf"
-    :maxFileSize="1000000"
-    :showUploadButton="false"
-    :showCancelButton="false"
-  >
-    <template #empty>
-      <div class="upload-placeholder">
-        <span>Drag and drop PDFs here to upload</span>
-      </div>
-    </template>
-  </FileUpload>
-</div>
+      <FileUpload
+        name="demo[]"
+        url="/api/upload"
+        @upload="onAdvancedUpload"
+        :multiple="true"
+        accept="application/pdf"
+        :maxFileSize="1000000"
+        :showUploadButton="false"
+        :showCancelButton="false"
+      >
+        <template #empty>
+          <div class="upload-placeholder">
+            <span>Drag and drop PDFs here to upload</span>
+          </div>
+        </template>
+      </FileUpload>
+    </div>
 
-<div class="action-container">
-  <button @click="submitToBackend" class="backend-btn">⛓️ Mit Blockchain signieren</button>
-</div>
+    <div class="action-container">
+      <button @click="submitToBackend" class="backend-btn">⛓️ Mit Blockchain signieren</button>
+    </div>
 
-    <!-- Optional: Liste der hochgeladenen Dateien anzeigen -->
     <div v-if="pdfFiles.length > 0" class="file-list">
       <h2>Hochgeladene Dateien:</h2>
       <ul>
@@ -43,7 +42,7 @@ const pdfFiles = ref([])
 
 function onAdvancedUpload(event) {
   console.log('Upload Event:', event)
-  pdfFiles.value = event.files // Speichert die hochgeladenen PDF-Dateien
+  pdfFiles.value = event.files
 }
 
 function signWithBlockchain() {
@@ -53,27 +52,23 @@ function signWithBlockchain() {
   }
 
   console.log('Signiere mit der Blockchain...', pdfFiles.value)
-  // Hier kommt die Logik für das Signieren mit der Blockchain
-  // Zum Beispiel einen Hash der Datei berechnen und an einen Smart Contract senden
   alert('Das Dokument wurde erfolgreich mit der Blockchain verknüpft!')
 }
 
 function submitToBackend() {
   console.log('Sende Daten ans Backend...');
-  // Hier später API-Call einbauen, z.B. via fetch oder axios
 }
 </script>
 
 <style scoped>
-
-.file-upload-wrapper {
-  max-width: 300px; /* oder 250px je nach Look */
-  margin: 0 auto; /* zentriert */
+/* Neuer Hintergrund für die gesamte Seite */
+:global(body) {
+  background-color: #f5f7ff;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-.p-fileupload {
-  width: 100%;
-}
+/* Container */
 .sign-container {
   max-width: 700px;
   margin: 3rem auto;
@@ -81,19 +76,30 @@ function submitToBackend() {
   background-color: #fff;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* Überschrift */
 h1 {
   font-size: 2rem;
   margin-bottom: 0.5rem;
   text-align: center;
 }
 
+/* Untertitel */
 .subtitle {
   text-align: center;
   margin-bottom: 2rem;
   color: #666;
+}
+
+/* File Upload Bereich */
+.file-upload-wrapper {
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.p-fileupload {
+  width: 100%;
 }
 
 .upload-placeholder {
@@ -103,26 +109,32 @@ h1 {
   font-style: italic;
 }
 
+/* Button Container */
 .action-container {
   margin-top: 2rem;
   text-align: center;
 }
 
-.sign-button {
-  background-color: #007bff;
+/* Button Style */
+.backend-btn {
+  flex: 1 1 auto;
+  padding: 0.75rem 1.5rem;
+  background-color: #4f46e5; /* Indigo */
   color: white;
-  padding: 1rem 2rem;
-  font-size: 1rem;
-  border: none;
+  font-weight: bold;
   border-radius: 8px;
-  cursor: pointer;
+  text-align: center;
   transition: background-color 0.3s ease;
+  min-width: 200px;
+  border: none;
+  cursor: pointer;
 }
 
-.sign-button:hover {
-  background-color: #0056b3;
+.backend-btn:hover {
+  background-color: #6366f1;
 }
 
+/* Liste hochgeladener Dateien */
 .file-list {
   margin-top: 1rem;
   padding: 1rem;
@@ -145,23 +157,5 @@ h1 {
   background-color: #e9e9e9;
   margin-bottom: 0.5rem;
   border-radius: 4px;
-}
-
-.backend-btn {
-  flex: 1 1 auto;
-  padding: 0.75rem 1.5rem;
-  background-color: #4f46e5; /* Indigo */
-  color: white;
-  font-weight: bold;
-  border-radius: 8px;
-  text-align: center;
-  transition: background-color 0.3s ease;
-  min-width: 200px;
-  border: none;
-  cursor: pointer;
-}
-
-.backend-btn:hover {
-  background-color: #6366f1;
 }
 </style>

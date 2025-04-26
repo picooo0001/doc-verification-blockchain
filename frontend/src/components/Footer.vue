@@ -19,5 +19,9 @@
     position: relative; /* oder fixed, siehe unten */
     bottom: 0;
     width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
   }
   </style>

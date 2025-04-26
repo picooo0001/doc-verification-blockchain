@@ -3,8 +3,8 @@
     <div class="nav-links">
       <RouterLink to="/sign-pdf" class="nav-link">Sign PDF</RouterLink>
       <div class="logo">
-      <span>📝</span>
-    </div>
+        <span>📝</span>
+      </div>
       <RouterLink to="/about" class="nav-link">About</RouterLink>
     </div>
   </div>
@@ -13,61 +13,60 @@
 <style scoped>
 .navbar {
   display: flex;
-  align-items: center; /* vertikal zentriert */
-  justify-content: center; /* horizontal zentriert */
-  padding: 1rem 2rem;
-  background-color: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  height: 80px;
-  border-radius: 16px;
+  align-items: center;
+  justify-content: center;
+  height: 60px; /* Weniger hoch */
+  background-color: #4f46e5; /* Indigo-Blau */
   font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue",
     Helvetica, Arial, sans-serif;
-  margin: 0;
-  padding: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Stärkerer, weicher Schatten */
+  border-radius: 16px; /* Sanfte Rundungen */
+  margin: 2rem auto; /* Abstand oben/unten, mittig */
+  padding: 0 2rem;
+  width: 90%; /* Nicht Full-Width */
+  max-width: 1200px; /* Maximal 1200px breit */
 }
 
 .logo {
   display: flex;
   align-items: center;
-  margin-right: 20px;
+  margin: 0 20px;
 }
 
 .logo span {
-  font-size: 3rem;
+  font-size: 2.5rem; /* Logo ein kleines bisschen kleiner */
+  color: white;
 }
 
 .nav-links {
   display: flex;
   gap: 30px;
+  align-items: center;
 }
 
 .nav-link {
-  font-size: 2rem; /* Alternativ: calc(100% - etwas) oder vh/vw nutzen */
+  font-size: 1.25rem; /* Kleiner, dafür edler */
   font-weight: bold;
   text-decoration: none;
-  color: #333;
+  color: white;
   padding: 0.5rem 1rem;
   border-radius: 8px;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.3s ease;
 }
 
-/* Kein Lila + keine Unterstreichung bei visited */
+/* Kein Farbwechsel bei visited */
 .nav-link:visited {
-  color: #333;
-  text-decoration: none;
+  color: white;
 }
 
 /* Hover Effekt */
 .nav-link:hover {
-  background-color: #e0e0e0;
+  background-color: #6366f1;
 }
 
-/* Klick- bzw. active-Effekt */
-.nav-link:active {
-  background-color: #cfcfcf;
-}
+/* Aktive Seite */
 .router-link-exact-active {
-  background-color: #f0f0f0; /* Dauerhaft ausgegrauter Hintergrund */
+  background-color: #6366f1;
   border-radius: 8px;
 }
 </style>
