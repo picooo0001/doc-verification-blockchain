@@ -22,10 +22,9 @@
   </FileUpload>
 </div>
 
-    <!-- Button wird nur angezeigt, wenn PDF-Dateien hochgeladen wurden -->
-    <div v-if="pdfFiles.length > 0" class="action-container">
-      <button @click="signWithBlockchain" class="sign-button">Mit Blockchain signieren</button>
-    </div>
+<div class="action-container">
+  <button @click="submitToBackend" class="backend-btn">⛓️ Mit Blockchain signieren</button>
+</div>
 
     <!-- Optional: Liste der hochgeladenen Dateien anzeigen -->
     <div v-if="pdfFiles.length > 0" class="file-list">
@@ -57,6 +56,11 @@ function signWithBlockchain() {
   // Hier kommt die Logik für das Signieren mit der Blockchain
   // Zum Beispiel einen Hash der Datei berechnen und an einen Smart Contract senden
   alert('Das Dokument wurde erfolgreich mit der Blockchain verknüpft!')
+}
+
+function submitToBackend() {
+  console.log('Sende Daten ans Backend...');
+  // Hier später API-Call einbauen, z.B. via fetch oder axios
 }
 </script>
 
@@ -141,5 +145,23 @@ h1 {
   background-color: #e9e9e9;
   margin-bottom: 0.5rem;
   border-radius: 4px;
+}
+
+.backend-btn {
+  flex: 1 1 auto;
+  padding: 0.75rem 1.5rem;
+  background-color: #4f46e5; /* Indigo */
+  color: white;
+  font-weight: bold;
+  border-radius: 8px;
+  text-align: center;
+  transition: background-color 0.3s ease;
+  min-width: 200px;
+  border: none;
+  cursor: pointer;
+}
+
+.backend-btn:hover {
+  background-color: #6366f1;
 }
 </style>
