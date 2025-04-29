@@ -30,6 +30,11 @@ def create_app(test_config: dict = None):
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
+    @login_manager.user_loader
+    def load_user(user_id):
+        from .models import User
+        return User.query.get(int(user_id))
+
     # Blueprints importieren und registrieren (deferred Imports verhindern Zirkuläre Abhängigkeiten)
     from .routes import bp as notary_bp
     from .auth import bp as auth_bp

@@ -118,6 +118,36 @@ Loggt den aktuell eingeloggten Benutzer aus.
 
 ---
 
+## GET `/setup-2fa`
+Gibt dem eingeloggten Benutzer sein OTP-Secret, die Provisioning-URI und einen QR-Code zurück, damit er 2-Faktor-Authentifizierung in seiner Authenticator-App einrichten kann.
+
+**URL**
+`/setup-2fa`
+
+**Methode**
+`GET`
+
+**Authentifizierung**
+Erofrdert gültige Session (Cookie) via Flask-Login.
+
+**Erfolgs-Response (200 OK)**
+```json
+{
+  "otp_secret": "JBSWY3DPEHPK3PXP",
+  "provisioning_uri": "otpauth://totp/DocNotary:alice%40test.org?secret=JBSWY3DPEHPK3PXP&issuer=DocNotary",
+  "qr_code_png_base64": "iVBORw0KGgoAAAANSUhEUgAA..."
+}
+```
+- **otp_secret**: Base32-endcodeter Schlüssel für TOTP-Apps
+- **provisoning_uri**: URI zum Import in Autehnticatior-Apps (RFC 6238)
+- **qr_code_png_base64**: QR-Code als Base64-PNG
+
+**Fehler-Responses**
+- **401 Unauthorized**
+```json
+{ "error": "Authentication required" }
+```
+
 ## Hinweise
 
 - Der `timestamp` wird im Unix-Epoch-Format (Sekunden seit 1970-01-01 UTC) zurückgegeben.
@@ -125,3 +155,5 @@ Loggt den aktuell eingeloggten Benutzer aus.
 - Standard-Port des Backends: `5001`.
 - Für lokale Tests: Stelle sicher, dass der Hardhat-Node auf `localhost:8545` läuft und der Notary-Contract deployed ist.
 - CORS: Wenn das Frontend auf einer anderen Origin läuft, konfiguriere CORS in `app/__init__.py`.
+- Session-Cookie: `/login`, `/logout` und `/setup-2fa setzen` bzw. benötigen das Flask-Login-Cookie.
+

@@ -196,7 +196,7 @@ npx hardhat run scripts/deploy.js --network localhost
 - **Verify**:  
   `curl -F "file=@/path/to/doc.pdf" http://localhost:5001/api/verify`
 
-- **Login**:  
+- **Login** (ergänze Secret mit dem OTP Secret aus der DB):  
   ```bash
   OTP=$(python3 - <<EOF
   import pyotp
