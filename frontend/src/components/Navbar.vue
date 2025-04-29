@@ -4,7 +4,7 @@
     <div class="nav-links">
       <RouterLink to="/sign-pdf" class="nav-link">Sign PDF</RouterLink>
       <div class="logo">
-        <span>📝</span>
+  <img src="./pics/logo.png" alt="Logo" class="logo-img" />
       </div>
       <RouterLink to="/about" class="nav-link">About</RouterLink>
     </div>
@@ -16,6 +16,12 @@
 </template>
 
 <style scoped>
+.logo-img {
+  width: 64px;      /* oder z. B. 80px, je nach Wunsch */
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
 .navbar {
   display: flex;
   align-items: center;
