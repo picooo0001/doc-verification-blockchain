@@ -14,16 +14,18 @@
       </div>
   
       <div class="action-container">
-        <button class="backend-btn" @click="login">🔐 Login</button>
+        <button class="backend-btn" @click="login">Login</button>
       </div>
     </div>
   </template>
   
   <script setup>
   import { ref } from 'vue'
+  import { useRouter } from 'vue-router'
   
   const email = ref('')
   const password = ref('')
+  const router = useRouter()
   
   function login() {
     if (!email.value || !password.value) {
@@ -32,9 +34,20 @@
     }
   
     console.log('Login attempt:', email.value, password.value)
+    
+    // Speichern in localStorage und in Vue direkt
+    localStorage.setItem("isLoggedIn", "true");
+  
+    // Den Zustand sofort in der Navbar-Komponente aktualisieren
     alert('Login erfolgreich (Demo-Zustand).')
+  
+    // Weiterleitung zur Sign PDF Seite
+    router.push("/sign-pdf");
+    this.showDropdown = false; 
   }
   </script>
+  
+  
   
   <style scoped>
   .login-container {
@@ -85,16 +98,17 @@
   }
   
   .backend-btn {
-    padding: 0.75rem 1.5rem;
-    background-color: #22d3ee;
-    color: white;
-    font-weight: bold;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    min-width: 200px;
-  }
+  padding: 0.75rem 1.5rem;
+  background-color: #22d3ee;
+  color: white;
+  font-weight: bold;
+  font-size: 1.25rem;  /* Schriftgröße vergrößern */
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  min-width: 200px;
+}
   
   .backend-btn:hover {
     background-color: #6366f1;

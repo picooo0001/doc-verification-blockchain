@@ -4,20 +4,67 @@
     <div class="nav-links">
       <RouterLink to="/sign-pdf" class="nav-link">Sign PDF</RouterLink>
       <div class="logo">
-  <img src="./pics/logo.png" alt="Logo" class="logo-img" />
+        <img src="/Users/meat/doc-verification-blockchain/frontend/pics/logo.png" alt="Logo" class="logo-img" />
       </div>
       <RouterLink to="/about" class="nav-link">About</RouterLink>
     </div>
     <!-- Rechter Container für den Login-Button -->
     <div class="auth-container">
-      <RouterLink to="/login" class="auth-link">Login</RouterLink>
+      <template v-if="isLoggedIn">
+        <span class="logged-in-text">Signed in</span>
+        <div class="profile-dropdown" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
+          <img src="/Users/meat/doc-verification-blockchain/frontend/pics/profile.png" alt="Profil" class="profile-icon" />
+          <div v-if="showDropdown" class="dropdown-menu">
+            <RouterLink to="/profile" class="dropdown-item">Konto</RouterLink>
+            <a href="#" class="dropdown-item" @click.prevent="logout">Abmelden</a>
+          </div>
+        </div>
+      </template>
+      <template v-else>
+        <RouterLink to="/login" class="auth-link">Login</RouterLink>
+      </template>
     </div>
   </div>
 </template>
 
+<script>
+import image from '/Users/meat/doc-verification-blockchain/frontend/pics/logo.png';
+import image1 from '/Users/meat/doc-verification-blockchain/frontend/pics/profile.png';
+
+export default {
+  data() {
+    return {
+      imageSrc: image,
+      image1: image1,
+      showDropdown: false,
+      isLoggedIn: false,  // Der Status, der direkt in Vue gehalten wird
+    };
+  },
+  mounted() {
+    // Initialen Status aus localStorage setzen
+    this.isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  },
+  methods: {
+    logout() {
+      localStorage.removeItem("isLoggedIn");
+      this.isLoggedIn = false;  // Status in Vue anpassen
+      this.$router.push("/login"); // Optional: Weiterleitung zur Login-Seite
+    }
+  },
+  watch: {
+    // Wenn localStorage aktualisiert wird, den isLoggedIn-Status in Vue neu setzen
+    '$route'() {
+      this.isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    }
+  }
+};
+</script>
+
+
+
 <style scoped>
 .logo-img {
-  width: 64px;      /* oder z. B. 80px, je nach Wunsch */
+  width: 128px;      /* oder z. B. 80px, je nach Wunsch */
   height: auto;
   display: block;
   margin: 0 auto;
@@ -130,4 +177,53 @@
     font-size: 1rem;
   }
 }
+
+.logged-in-text {
+  color: #e2e1e1;
+  margin-right: 0.5rem;
+  font-weight: normal;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue",
+  Helvetica, Arial, sans-serif;
+  font-size: 0.6rem; /* oder z.B. 0.8rem für noch kleiner */
+}
+
+.profile-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.profile-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.5rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 20;
+  min-width: 120px;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 0.5rem 1rem;
+  color: #e2e8f0;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #334155;
+}
+
 </style>
