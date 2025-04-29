@@ -50,7 +50,7 @@
   max-width: 800px;
   margin: 2rem auto;
   padding: 2rem;
-  background-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.95); /* Weiß mit 85% Deckkraft */
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -80,8 +80,8 @@
 .download-btn {
   flex: 1 1 auto;
   padding: 0.75rem 1.5rem;
-  background-color: #4f46e5; /* Indigo */
-  color: white;
+  background-color: #22d3ee;
+    color: white;
   text-decoration: none;
   font-weight: bold;
   border-radius: 8px;

@@ -3,24 +3,24 @@
     <h1>PDF Signieren</h1>
     <p class="subtitle">Lade ein oder mehrere PDF-Dateien hoch, um sie mit der Blockchain zu verknüpfen.</p>
 
-    <div class="file-upload-wrapper">
-      <FileUpload
-        name="demo[]"
-        url="/api/upload"
-        @upload="onAdvancedUpload"
-        :multiple="true"
-        accept="application/pdf"
-        :maxFileSize="1000000"
-        :showUploadButton="false"
-        :showCancelButton="false"
-      >
-        <template #empty>
-          <div class="upload-placeholder">
-            <span>Drag and drop PDFs here to upload</span>
-          </div>
-        </template>
-      </FileUpload>
-    </div>
+  <div class="file-upload-wrapper">
+    <FileUpload
+      name="demo[]"
+      url="/api/upload"
+      @upload="onAdvancedUpload"
+      :multiple="true"
+      accept="application/pdf"
+      :maxFileSize="1000000"
+      :showUploadButton="false"
+      :showCancelButton="false"
+    >
+      <template #empty>
+        <div class="upload-placeholder">
+          <span>Drag and drop PDFs here to upload</span>
+        </div>
+      </template>
+    </FileUpload>
+  </div>
 
     <div class="action-container">
       <button @click="submitToBackend" class="backend-btn">⛓️ Mit Blockchain signieren</button>
@@ -61,21 +61,58 @@ function submitToBackend() {
 </script>
 
 <style scoped>
-/* Neuer Hintergrund für die gesamte Seite */
 :global(body) {
-  background-color: #f5f7ff;
+  background-image: url('/Users/meat/doc-verification-blockchain/frontend/pics/blockchain-informationen-flexibel-sicher.1.4.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
+.p-fileupload-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #22d3ee;  /* Light blue */
+  color: white;
+  font-weight: bold;
+  border-radius: 8px;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
 
-/* Container */
-.sign-container {
-  max-width: 700px;
-  margin: 3rem auto;
+.p-fileupload-button:hover {
+  background-color: #6366f1;  /* Darker blue on hover */
+  transform: scale(1.05);
+}
+
+.upload-placeholder {
+  text-align: center;
   padding: 2rem;
-  background-color: #fff;
+  color: #94a3b8;
+  font-style: italic;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px dashed #38bdf8;
+  border-radius: 8px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.upload-placeholder:hover {
+  background-color: rgba(56, 189, 248, 0.1);
+  border-color: #6366f1;
+}
+
+/* Glassmorphism Container */
+.sign-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: rgba(255, 255, 255, 0.95); /* Weiß mit 85% Deckkraft */
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  color: black; /* Schriftfarbe auf Schwarz setzen */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* Überschrift */
@@ -83,13 +120,14 @@ h1 {
   font-size: 2rem;
   margin-bottom: 0.5rem;
   text-align: center;
+  color: black; /* Schriftfarbe auf Schwarz setzen */
 }
 
 /* Untertitel */
 .subtitle {
   text-align: center;
   margin-bottom: 2rem;
-  color: #666;
+  color: black; /* Schriftfarbe auf Schwarz setzen */
 }
 
 /* File Upload Bereich */
@@ -105,8 +143,17 @@ h1 {
 .upload-placeholder {
   text-align: center;
   padding: 2rem;
-  color: #888;
+  color: #94a3b8;
   font-style: italic;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px dashed #38bdf8;
+  border-radius: 8px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.upload-placeholder:hover {
+  background-color: rgba(56, 189, 248, 0.1);
+  border-color: #6366f1;
 }
 
 /* Button Container */
@@ -117,14 +164,13 @@ h1 {
 
 /* Button Style */
 .backend-btn {
-  flex: 1 1 auto;
   padding: 0.75rem 1.5rem;
-  background-color: #4f46e5; /* Indigo */
+  background-color: #22d3ee;
   color: white;
   font-weight: bold;
   border-radius: 8px;
   text-align: center;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease;
   min-width: 200px;
   border: none;
   cursor: pointer;
@@ -132,14 +178,16 @@ h1 {
 
 .backend-btn:hover {
   background-color: #6366f1;
+  transform: scale(1.02);
 }
 
 /* Liste hochgeladener Dateien */
 .file-list {
   margin-top: 1rem;
   padding: 1rem;
-  background-color: #f9f9f9;
+  background-color: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
+  color: #e2e8f0;
 }
 
 .file-list h2 {
@@ -154,8 +202,9 @@ h1 {
 
 .file-list li {
   padding: 0.5rem;
-  background-color: #e9e9e9;
+  background-color: rgba(255, 255, 255, 0.1);
   margin-bottom: 0.5rem;
   border-radius: 4px;
 }
 </style>
+
