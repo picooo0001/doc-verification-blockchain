@@ -16,3 +16,10 @@ class Config:
         "CONTRACT_ABI_PATH",
         "../contracts/artifacts/contracts/Notary.sol/Notary.json"
     )
+    # Datenbank URL
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql://myuser:mypass@localhost:5432/mydb")
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Security
+    SECRET_KEY = os.getenv("SECRET_KEY", "setz-dir-ein-geheimes-key")
+
