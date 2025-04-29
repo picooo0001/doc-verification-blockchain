@@ -43,7 +43,6 @@
   
     // Weiterleitung zur Sign PDF Seite
     router.push("/sign-pdf");
-    this.showDropdown = false; 
   }
   </script>
   

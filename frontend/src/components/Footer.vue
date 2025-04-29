@@ -1,9 +1,9 @@
 <template>
   <footer class="footer">
     <div class="footer-content">
-      <p>© 2025 Blockchain-basierte Dokumentensignierung</p>
+      <p>© 2025 PDF-Sign with Blockchain</p>
       <div class="footer-links">
-        <a href="/contact">Kontakt & Rechtliches</a>
+        <a href="/contact">Contact & Legal</a>
         <a href="/download">Downloads</a>
       </div>
     </div>
