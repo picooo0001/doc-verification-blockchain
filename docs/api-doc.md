@@ -18,6 +18,8 @@ Notarisiert ein hochgeladenes Dokument in der Blockchain.
 | Feldname | Typ  | Beschreibung                    |
 |----------|------|---------------------------------|
 | file     | File | Zu notarisiertes PDF/Binärdaten |
+| documentId     | String | Eindeutige ID, unter der das Dokument notariell hinterlegt werden soll |
+
 
 **Erfolgs-Response (200 OK)**  
 ```json
@@ -31,7 +33,11 @@ Notarisiert ein hochgeladenes Dokument in der Blockchain.
 ```json
 { "error": "No file provided" }
 
-{ "error": "Dokument schon notariell hinterlegt" }
+{ "error": "No documentId provided" }
+
+{ "error": "Dokument darf nicht geändert werden" }
+
+{ "error": "Schon notariell hinterlegt" }
 ```
 - 500 Internal Server Error
 
