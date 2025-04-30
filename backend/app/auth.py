@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from .models import User
 from . import db
@@ -81,10 +81,58 @@ def setup_2fa():
     }), 200
 
 @bp.route("/user/profile", methods=["GET"])
-#@login_required
+@login_required
 def user_profile():
     return jsonify({
         "email": current_user.email,
         "organization": current_user.organization.name,
         "2faEnabled": bool(current_user.otp_secret)
     }), 200
+
+@bp.route("/user/2fa", methods=["POST"])
+@login_required
+def update_2fa():
+    """
+    Aktiviert oder deaktiviert 2FA für den eingeloggten Nutzer.
+    Bei enable=True: Generiert (falls nötig) ein neues Secret, 
+    speichert es, und liefert Secret, Provisioning-URI und QR-Code.
+    Bei enable=False: Entfernt das Secret.
+    """
+    data = request.get_json() or {}
+    enable = data.get("enable", False)
+    user = current_user
+
+    if enable:
+        # 2FA aktivieren: Secret generieren, wenn noch keines existiert
+        if not user.otp_secret:
+            user.generate_otp_secret()
+            db.session.commit()
+
+        # Provisioning-URI erstellen
+        uri = pyotp.TOTP(user.otp_secret).provisioning_uri(
+            name=user.email,
+            issuer_name="DocNotary"
+        )
+
+        # QR-Code erzeugen und als Base64 kodieren
+        qr = qrcode.QRCode(box_size=10, border=4)
+        qr.add_data(uri)
+        qr.make(fit=True)
+        img = qr.make_image(fill="black", back_color="white")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        qr_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+        return jsonify({
+            "message": "2FA aktiviert",
+            "otp_secret": user.otp_secret,
+            "provisioning_uri": uri,
+            "qr_code_png_base64": qr_b64
+        }), 200
+
+    else:
+        # 2FA deaktivieren: Secret entfernen
+        user.otp_secret = None
+        db.session.commit()
+        return jsonify({"message": "2FA deaktiviert"}), 200
+
