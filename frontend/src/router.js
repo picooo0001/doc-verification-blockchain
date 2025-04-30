@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import SignPdfView from './views/SignPDF.vue'
 import AboutView from './views/AboutProject.vue'
 import Contact from './views/Contact.vue'
-import Download from './views/download.vue'
+import Download from './views/Download.vue'
 import Login from './views/Login.vue'
 import Profile from './views/Profile.vue'
 
