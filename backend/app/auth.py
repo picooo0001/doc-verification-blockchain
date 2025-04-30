@@ -21,26 +21,35 @@ bp = Blueprint("auth", __name__)
 
 @bp.route("/login", methods=["POST"])
 def login():
-    # E-Mail, Passwort und optionales OTP aus dem Request holen
-    email = request.form.get("email")
-    password = request.form.get("password")
-    otp = request.form.get("otp")  # OTP ist optional
+    # 1) Payload lesen (Form-Data oder JSON)
+    if request.is_json:
+        data     = request.get_json()
+        email    = data.get("email")
+        password = data.get("password")
+        otp      = data.get("otp")
+    else:
+        email    = request.form.get("email")
+        password = request.form.get("password")
+        otp      = request.form.get("otp")
 
-    # Benutzer anhand der E-Mail ermitteln
+    # 2) Benutzer & Passwort prüfen
     user = User.query.filter_by(email=email).first()
-    # Überprüfen, ob Benutzer existiert und Passwort korrekt ist
     if not user or not user.check_password(password):
         return jsonify({"error": "Ungültige E-Mail oder Passwort"}), 401
 
-    # Wenn 2FA aktiviert ist (otp_secret hinterlegt), muss ein gültiges OTP mitgeliefert werden
+    # 3) 2FA-Flow: fehlt otp?
     if user.otp_secret:
-        # Überprüfen, ob ein OTP eingegeben wurde und ob es korrekt ist
-        if not otp or not user.verify_otp(otp):
+        if not otp:
+            # kein OTP im Request → OTP erforderlich
+            return jsonify({"error": "2FA erforderlich"}), 401
+        if not user.verify_otp(otp):
+            # falsches OTP
             return jsonify({"error": "Ungültiges OTP"}), 401
 
-    # Anmeldung erfolgreich, Benutzer einloggen
+    # 4) alles ok → Login
     login_user(user)
     return jsonify({"message": "Login erfolgreich"}), 200
+
 
 
 @bp.route("/setup-2fa", methods=["GET"])
