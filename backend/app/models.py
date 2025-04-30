@@ -26,7 +26,7 @@ class User(db.Model, UserMixin):
         self.otp_secret = pyotp.random_base32()
 
     def verify_otp(self, token):
-        if not self.otp_secret:
+        if not self.otp_secret or not token:
             return False
         totp = pyotp.TOTP(self.otp_secret)
-        return totp.verify(token, valid_window=1)
+        return totp.verify(token, valid_window=5)
