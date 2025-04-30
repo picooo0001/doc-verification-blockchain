@@ -56,6 +56,7 @@ function signWithBlockchain() {
 }
 
 function submitToBackend() {
+  signWithBlockchain();
   console.log('Sende Daten ans Backend...');
 }
 </script>
