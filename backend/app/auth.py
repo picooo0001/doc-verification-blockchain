@@ -79,3 +79,12 @@ def setup_2fa():
         "provisioning_uri": uri,
         "qr_code_png_base64": qr_b64
     }), 200
+
+@bp.route("/user/profile", methods=["GET"])
+#@login_required
+def user_profile():
+    return jsonify({
+        "email": current_user.email,
+        "organization": current_user.organization.name,
+        "2faEnabled": bool(current_user.otp_secret)
+    }), 200
