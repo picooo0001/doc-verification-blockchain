@@ -1,15 +1,26 @@
 <template>
   <div class="profile-container" v-if="user">
-    <h1>Dein Profil</h1>
+    <h1>Profil</h1>
 
     <div class="profile-info">
-      <p><strong>E-Mail:</strong> {{ user.email }}</p>
+      <p><strong>Mail:</strong> {{ user.email }}</p>
       <p><strong>Organisation:</strong> {{ user.organization }}</p>
     </div>
+    <div class="otp-toggle">
+    <span><strong>Activate 2FA:</strong></span>
+    <label class="switch">
+      <input type="checkbox" v-model="otpEnabled" @change="toggleOTP">
+      <span class="slider round"></span>
+    </label>
+  </div>
+  <div v-if="otpQRCodeUrl" class="qr-code-section">
+  <p>Scanne diesen QR-Code mit deiner Authenticator-App:</p>
+  <img :src="otpQRCodeUrl" alt="QR-Code zur 2FA-Aktivierung" class="qr-code-image" />
+</div>
 
     <div class="profile-actions">
-      <button class="edit-btn" @click="editProfile">Bearbeiten</button>
       <button class="change-password-btn" @click="changePassword">Passwort ändern</button>
+   
     </div>
 
     <h2>Deine Aktivitäten</h2>
@@ -19,12 +30,13 @@
     <p>Lade Benutzerdaten...</p>
   </div>
 </template>
-
 <script>
 export default {
   data() {
     return {
       user: null,
+      otpEnabled: false,
+      otpQRCodeUrl: null,
     };
   },
   mounted() {
@@ -40,6 +52,7 @@ export default {
         if (response.ok) {
           const data = await response.json();
           this.user = data;
+          this.otpEnabled = data["2faEnabled"]; // ⬅️ Diese Zeile war vorher gefehlt!
         } else {
           console.error("Fehler beim Abrufen der Benutzerdaten");
         }
@@ -53,9 +66,43 @@ export default {
     changePassword() {
       // TODO
     },
+    async toggleOTP() {
+      console.log("Toggle OTP wird ausgelöst");
+
+      try {
+        const response = await fetch("http://localhost:5001/user/2fa", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ enable: this.otpEnabled }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Antwort vom Backend:", data);
+
+          if (this.otpEnabled && data.qr_code_png_base64) {
+            this.otpQRCodeUrl = `data:image/png;base64,${data.qr_code_png_base64}`;
+          } else {
+            this.otpQRCodeUrl = null;
+          }
+
+          alert(`2FA wurde ${this.otpEnabled ? "aktiviert" : "deaktiviert"}.`);
+        } else {
+          alert("Fehler beim Ändern des 2FA-Status");
+          this.otpEnabled = !this.otpEnabled;
+        }
+      } catch (error) {
+        console.error("Fehler:", error);
+        this.otpEnabled = !this.otpEnabled;
+      }
+    },
   },
 };
 </script>
+
 
 
 <style scoped>
@@ -109,4 +156,68 @@ h2 {
   margin-top: 3rem;
   font-size: 1.75rem;
 }
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #10b981;
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+.otp-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qr-code-section {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.qr-code-image {
+  margin-top: 0.5rem;
+  max-width: 200px;
+}
+
+
 </style>

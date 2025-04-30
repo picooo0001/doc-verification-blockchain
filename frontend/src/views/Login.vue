@@ -3,25 +3,34 @@
     <h1>Login</h1>
     <p class="subtitle">Melde dich mit deinen Organisations-Credentials an.</p>
 
-    <div class="form-group">
-      <label for="email">E-Mail</label>
-      <input type="email" id="email" v-model="email" placeholder="name@example.com" />
-    </div>
+    <!-- Form-Element für automatisches Login bei Enter -->
+    <form @submit.prevent="login">
+      <div class="form-group">
+        <label for="email">E-Mail</label>
+        <input type="email" id="email" v-model="email" placeholder="name@example.com" />
+      </div>
 
-    <div class="form-group">
-      <label for="password">Passwort</label>
-      <input type="password" id="password" v-model="password" placeholder="••••••••" />
-    </div>
+      <div class="form-group">
+        <label for="password">Passwort</label>
+        <input type="password" id="password" v-model="password" placeholder="••••••••" />
+      </div>
+      
+      <!-- 2FA Eingabefeld nur anzeigen, wenn erforderlich -->
+      <div v-if="is2FARequired" class="form-group">
+        <label for="otp">2FA-Code</label>
+        <input
+          type="text"
+          id="otp"
+          v-model="otp"
+          placeholder="Gib deinen 6-stelligen Code ein"
+          maxlength="6"
+        />
+      </div>
 
-    <!-- Optional: 2FA Eingabefeld -->
-    <div v-if="is2FARequired" class="form-group">
-      <label for="otp">2FA-Code</label>
-      <input type="text" id="otp" v-model="otp" placeholder="Gib deinen 2FA-Code ein" />
-    </div>
-
-    <div class="action-container">
-      <button class="backend-btn" @click="login">Login</button>
-    </div>
+      <div class="action-container">
+        <button class="backend-btn" type="submit">Login</button>
+      </div>
+    </form>
   </div>
 </template>
 
@@ -49,9 +58,13 @@ async function login() {
     password: password.value,
   }
 
-  // Wenn 2FA erforderlich ist, füge den OTP hinzu
-  if (is2FARequired.value && otp.value) {
-    loginData.otp = otp.value
+  // Wenn 2FA erforderlich ist, müssen wir den OTP hinzufügen
+  if (is2FARequired.value) {
+    if (!otp.value) {
+      alert("Bitte gib deinen 2FA-Code ein.")
+      return
+    }
+    loginData.otp = otp.value  // OTP zur Login-Daten hinzufügen
   }
 
   try {
@@ -59,7 +72,7 @@ async function login() {
       withCredentials: true,  // ermöglicht das Senden von Cookies (wie Session-IDs)
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded', // Formulardaten senden
+        'Content-Type': 'application/json',  // Achte auf den richtigen Content-Type
       }
     })
 
@@ -68,15 +81,18 @@ async function login() {
     localStorage.setItem('isLoggedIn', 'true')  // Loginstatus speichern
     router.push('/sign-pdf')  // Weiterleitung zur nächsten Seite
   } catch (error) {
-    console.error('Login fehlgeschlagen', error.response?.data || error)
+    const err = error.response?.data?.error
 
-    // Handhabung von Fehlern je nach Fehlerbeschreibung des Servers
-    if (error.response?.data?.error === 'Ungültiges OTP') {
-      alert('Der 2FA-Code ist ungültig.')
-    } else if (error.response?.data?.error === 'Ungültige E-Mail oder Passwort') {
+    if (err === '2FA erforderlich') {
+      // Falls 2FA erforderlich ist, zeigen wir das OTP-Eingabefeld
+      is2FARequired.value = true
+      alert('Bitte gib deinen 2FA-Code ein.')
+    } else if (err === 'Ungültiges OTP') {
+      alert('Der eingegebene 2FA-Code ist falsch.')
+    } else if (err === 'Ungültige E-Mail oder Passwort') {
       alert('Überprüfe deine E-Mail und Passwort.')
     } else {
-      alert('Login fehlgeschlagen: ' + (error.response?.data?.error || 'Unbekannter Fehler'))
+      alert('Login fehlgeschlagen: ' + (err || 'Unbekannter Fehler'))
     }
   }
 }

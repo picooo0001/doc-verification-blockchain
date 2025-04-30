@@ -1,10 +1,10 @@
-# app/__init__.py
 from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
+from flask_cors import CORS  # Importiere CORS
 
 from .config import Config
 
@@ -25,6 +25,9 @@ def create_app(test_config: dict = None):
     # 2) Test-Config (falls vorhanden) direkt überschreiben
     if test_config:
         app.config.update(test_config)
+
+    # 3) CORS konfigurieren – nur Anfragen von localhost:5173 erlauben
+    CORS(app, resources={r"/*": {"origins": "http://localhost:5173", "supports_credentials": True}})
 
     # Extensions initialisieren
     db.init_app(app)
