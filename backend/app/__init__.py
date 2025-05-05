@@ -1,5 +1,6 @@
 # app/__init__.py
 from flask import Flask
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
@@ -13,10 +14,12 @@ migrate = Migrate()
 bcrypt = Bcrypt()
 login_manager = LoginManager()
 
-
 def create_app(test_config: dict = None):
     # 1) Basis-Config laden
     app = Flask(__name__)
+    CORS(app, 
+         supports_credentials=True,
+         origins=["http://localhost:5173"])
     app.config.from_object(Config)
     
     # 2) Test-Config (falls vorhanden) direkt überschreiben
