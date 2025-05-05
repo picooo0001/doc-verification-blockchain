@@ -12,9 +12,16 @@ class Organization(db.Model):
 class User(db.Model, UserMixin):
     __tablename__ = "users"
     id             = db.Column(db.Integer, primary_key=True)
+
+    # MetaMask Login
+    wallet_address = db.Column(db.String(42), unique=True, nullable=True)
+    login_nonce    = db.Column(db.String(32), nullable=True)
+
+    # Alter Login Prozess
     email          = db.Column(db.String(128), unique=True, nullable=False)
     password_hash  = db.Column(db.String(128), nullable=False)
-    otp_secret     = db.Column(db.String(32), nullable=True)  # für TOTP
+    otp_secret     = db.Column(db.String(32), nullable=True)
+
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id"), nullable=False)
 
     def set_password(self, password):

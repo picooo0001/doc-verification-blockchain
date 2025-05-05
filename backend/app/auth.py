@@ -7,6 +7,12 @@ import qrcode
 import io
 import base64
 
+# neue Imports
+import os, binascii
+from .web3utils import w3
+from eth_account.messages import encode_defunct
+from hexbytes import HexBytes
+
 bp = Blueprint("auth", __name__)
 
 @bp.route("/logout", methods=["POST"])
@@ -14,10 +20,6 @@ bp = Blueprint("auth", __name__)
 def logout():
     logout_user()
     return jsonify({"message": "Logout erfolgreich"}), 200
-
-# auth.py
-
-bp = Blueprint("auth", __name__)
 
 @bp.route("/login", methods=["POST"])
 def login():
@@ -49,8 +51,6 @@ def login():
     # 4) alles ok → Login
     login_user(user)
     return jsonify({"message": "Login erfolgreich"}), 200
-
-
 
 @bp.route("/setup-2fa", methods=["GET"])
 @login_required
@@ -144,4 +144,64 @@ def update_2fa():
         user.otp_secret = None
         db.session.commit()
         return jsonify({"message": "2FA deaktiviert"}), 200
+    
+# neue Login Route für Wallet based Logn
 
+@bp.route("/login/nonce", methods=["GET"])
+def get_nonce():
+    raw = request.args.get("address", "")
+    # 1) Gültige Ethereum-Adresse?
+    if not w3.is_address(raw):
+        return jsonify({"error": "Ungültige Adresse"}), 400
+    # 2) Checksummen-Format
+    try:
+        address = w3.to_checksum_address(raw)
+    except ValueError:
+        return jsonify({"error": "Ungültiges Adress-Format"}), 400
+
+    user = User.query.filter_by(wallet_address=address).first()
+    if not user:
+        return jsonify({"error": "Adresse nicht registriert"}), 404
+
+    # 3) Nonce erzeugen und speichern
+    import os, binascii
+    nonce = binascii.hexlify(os.urandom(16)).decode()
+    user.login_nonce = nonce
+    db.session.commit()
+
+    return jsonify({"nonce": nonce}), 200
+
+@bp.route("/login/wallet", methods=["POST"])
+def login_wallet():
+    data      = request.get_json() or {}
+    raw       = data.get("address", "")
+    signature = data.get("signature")
+
+    # 1) Adresse validieren & normalisieren
+    if not w3.is_address(raw):
+        return jsonify({"error": "Ungültige Adresse"}), 400
+    try:
+        address = w3.to_checksum_address(raw)
+    except ValueError:
+        return jsonify({"error": "Ungültiges Adress-Format"}), 400
+
+    # 2) User + Nonce prüfen
+    user = User.query.filter_by(wallet_address=address).first()
+    if not user or not user.login_nonce:
+        return jsonify({"error": "Nonce nicht gefunden"}), 401
+
+    # 3) Signatur prüfen
+    message = encode_defunct(text=user.login_nonce)
+    try:
+        recovered = w3.eth.account.recover_message(message, signature=HexBytes(signature))
+    except Exception:
+        return jsonify({"error": "Signatur ungültig"}), 401
+
+    if recovered != address:
+        return jsonify({"error": "Address mismatch"}), 401
+
+    # 4) Login abschließen
+    user.login_nonce = None
+    db.session.commit()
+    login_user(user)
+    return jsonify({"message": "Login erfolgreich"}), 200

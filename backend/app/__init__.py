@@ -1,10 +1,9 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
-from flask_cors import CORS 
 
 from .config import Config
 
@@ -35,6 +34,10 @@ def create_app(test_config: dict = None):
     bcrypt.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
+
+    @login_manager.unauthorized_handler
+    def return_401_for_api():
+        return jsonify({"error": "Unauthorized"}), 401
 
     @login_manager.user_loader
     def load_user(user_id):
