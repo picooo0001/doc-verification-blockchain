@@ -4,7 +4,7 @@
     <div class="nav-links">
       <RouterLink to="/sign-pdf" class="nav-link">Sign PDF</RouterLink>
       <div class="logo">
-        <img src="../assets/blockchain-informationen-flexibel-sicher.1.4" alt="Logo" class="logo-img" />
+        <img :src="logoSrc" alt="Logo" class="logo-img" />
       </div>
       <RouterLink to="/about" class="nav-link">About</RouterLink>
     </div>
@@ -13,7 +13,7 @@
       <template v-if="isLoggedIn">
         <span class="logged-in-text">Signed in</span>
         <div class="profile-dropdown" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
-          <img src="../assets/logo.png" alt="Profil" class="profile-icon" />
+          <img :src="profileSrc" alt="Profil" class="profile-icon" />
           <div v-if="showDropdown" class="dropdown-menu">
             <RouterLink to="/profile" class="dropdown-item">Konto</RouterLink>
             <a href="#" class="dropdown-item" @click.prevent="logout">Abmelden</a>
@@ -27,86 +27,64 @@
   </div>
 </template>
 
-<script>
-import image from '../assets/logo.png';
-import image1 from '../assets/profile.png';
+<script setup>
+import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+// use Vite alias @ to load assets in src/assets
+import logoSrc from '@/assets/logo.png'
+import profileSrc from '@/assets/profile.png'
 
-export default {
-  data() {
-    return {
-      imageSrc: image,
-      image1: image1,
-      showDropdown: false,
-      isLoggedIn: false,  // Der Status, der direkt in Vue gehalten wird
-    };
-  },
-  mounted() {
-    // Initialen Status aus localStorage setzen
-    this.isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  },
-  methods: {
-    logout() {
-      localStorage.removeItem("isLoggedIn");
-      this.isLoggedIn = false;  // Status in Vue anpassen
-      this.$router.push("/login"); // Optional: Weiterleitung zur Login-Seite
-    }
-  },
-  watch: {
-    // Wenn localStorage aktualisiert wird, den isLoggedIn-Status in Vue neu setzen
-    '$route'() {
-      this.isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    }
+const router = useRouter()
+const showDropdown = ref(false)
+const isLoggedIn = ref(localStorage.getItem('isLoggedIn') === 'true')
+
+function logout() {
+  localStorage.removeItem('isLoggedIn')
+  isLoggedIn.value = false
+  router.push('/login')
+}
+
+watch(
+  () => router.currentRoute.value.fullPath,
+  () => {
+    isLoggedIn.value = localStorage.getItem('isLoggedIn') === 'true'
   }
-};
+)
 </script>
 
-
-
 <style scoped>
-.logo-img {
-  width: 128px;      /* oder z. B. 80px, je nach Wunsch */
-  height: auto;
-  display: block;
-  margin: 0 auto;
-}
 .navbar {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Links und Login-Button am Rand */
+  justify-content: space-between;
   height: 64px;
-  background-color: rgba(10, 15, 44, 0.75); /* halbtransparentes Dunkelblau */
-  backdrop-filter: blur(8px); /* Glassmorphism Effekt */
-  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue",
-    Helvetica, Arial, sans-serif;
+  background-color: rgba(10, 15, 44, 0.75);
+  backdrop-filter: blur(8px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   border-radius: 16px;
   margin: 2rem auto;
   padding: 0 2rem;
   width: 1000px;
+  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   z-index: 10;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  margin: 0 20px;
-}
-
-.logo span {
-  font-size: 2.5rem; /* Logo ein kleines bisschen kleiner */
-  color: white;
 }
 
 .nav-links {
   display: flex;
   gap: 30px;
   align-items: center;
-  flex-grow: 1; /* Verhindert, dass der Login-Button die Navigationselemente nach rechts drängt */
-  justify-content: center; /* Mittige Ausrichtung der Links */
+  flex-grow: 1;
+  justify-content: center;
+}
+
+.logo-img {
+  width: 80px;
+  height: auto;
+  display: block;
 }
 
 .nav-link {
-  font-size: 1.25rem; /* Kleiner, dafür edler */
+  font-size: 1.25rem;
   font-weight: bold;
   text-decoration: none;
   color: #e2e8f0;
@@ -115,42 +93,32 @@ export default {
   transition: background-color 0.3s ease;
 }
 
-/* Kein Farbwechsel bei visited */
-.nav-link:visited {
-  color: white;
-}
-
-/* Hover Effekt */
 .nav-link:hover {
   background-color: rgba(56, 189, 248, 0.1);
-  border-color: #6366f1;
 }
 
-/* Aktive Seite */
 .router-link-exact-active {
-  background-color: rgba(56, 189, 248, 0.3); /* Stärkere Hintergrundfarbe */
-  color: #0a0f2c; /* dunkle Schrift für Kontrast */
+  background-color: rgba(56, 189, 248, 0.3);
+  color: #0a0f2c;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Leichter Schatten für mehr Fokus */
-  transform: scale(1.05); /* Leichte Skalierung für einen "Hervorhebungseffekt" */
-  transition: all 0.3s ease; /* Weiche Übergänge */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05);
+  transition: all 0.3s ease;
 }
 
-/* Auth Container für den Login Button */
 .auth-container {
   display: flex;
   align-items: center;
 }
 
 .auth-link {
-  font-size: 1rem; /* Kleinere Schriftgröße */
+  font-size: 1rem;
   font-weight: bold;
   text-decoration: none;
   color: #e2e1e1;
-  padding: 0.25rem 0.75rem; /* Weniger Padding */
+  padding: 0.25rem 0.75rem;
   border-radius: 8px;
-  background-color: #22d3ee; /* Cyan wie bei aktiven Links */
-
+  background-color: #22d3ee;
   transition: background-color 0.3s ease;
 }
 
@@ -158,38 +126,15 @@ export default {
   background-color: #4f46e5;
 }
 
-@media (max-width: 768px) {
-  .navbar {
-    flex-direction: column;
-    padding: 1rem;
-  }
-
-  .nav-links {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .auth-container {
-    margin-top: 10px;
-  }
-
-  .nav-link, .auth-link {
-    font-size: 1rem;
-  }
-}
-
 .logged-in-text {
   color: #e2e1e1;
   margin-right: 0.5rem;
-  font-weight: normal;
-  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue",
-  Helvetica, Arial, sans-serif;
-  font-size: 0.6rem; /* oder z.B. 0.8rem für noch kleiner */
+  font-size: 0.8rem;
 }
 
 .profile-icon {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   cursor: pointer;
 }
@@ -225,5 +170,4 @@ export default {
 .dropdown-item:hover {
   background-color: #334155;
 }
-
 </style>

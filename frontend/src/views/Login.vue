@@ -1,92 +1,107 @@
-<!-- src/views/Login.vue -->
 <template>
-    <div class="login-container">
-      <h1>Login</h1>
-      <p class="subtitle">Melde dich mit deinen Organisations-Credentials an.</p>
-  
-      <form @submit.prevent="login">
-        <!-- E-Mail / Passwort -->
-        <div class="form-group">
-          <label for="email">E-Mail</label>
-          <input type="email" id="email" v-model="email" placeholder="name@example.com" />
-        </div>
-  
-        <div class="form-group">
-          <label for="password">Passwort</label>
-          <input type="password" id="password" v-model="password" placeholder="••••••••" />
-        </div>
-  
-        <!-- 2FA-Code, wenn nötig -->
-        <div v-if="is2FARequired" class="form-group">
-          <label for="otp">2FA-Code</label>
-          <input
-            type="text" id="otp" v-model="otp"
-            placeholder="6-stellig" maxlength="6"
-          />
-        </div>
-  
-        <div class="action-container">
-          <button class="backend-btn" type="submit">
-            {{ is2FARequired ? '2FA prüfen & einloggen' : 'Login' }}
-          </button>
-        </div>
-      </form>
-  
+  <div class="login-container">
+    <h1>Login</h1>
+    <p class="subtitle">Melde dich mit deinen Organisations-Credentials an.</p>
+
+    <!-- Form-Element für automatisches Login bei Enter -->
+    <form @submit.prevent="login">
+      <div class="form-group">
+        <label for="email">E-Mail</label>
+        <input type="email" id="email" v-model="email" placeholder="name@example.com" />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Passwort</label>
+        <input type="password" id="password" v-model="password" placeholder="••••••••" />
+      </div>
+      
+      <!-- 2FA Eingabefeld nur anzeigen, wenn erforderlich -->
+      <div v-if="is2FARequired" class="form-group">
+        <label for="otp">2FA-Code</label>
+        <input
+          type="text"
+          id="otp"
+          v-model="otp"
+          placeholder="Gib deinen 6-stelligen Code ein"
+          maxlength="6"
+        />
+      </div>
+      <div class="action-container">
+        <button class="backend-btn" type="submit">Login</button>
+      </div>
+    </form>
       <hr />
-  
-      <h3>Alternativ: Wallet-Login</h3>
+      <h3>Oder per Wallet:</h3>
       <WalletLogin />
-    </div>
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue'
-  import { useRouter } from 'vue-router'
-  import axios from 'axios'
-  import WalletLogin from '@/components/WalletLogin.vue'
-  
-  const email = ref('')
-  const password = ref('')
-  const otp = ref('')
-  const is2FARequired = ref(false)
-  const router = useRouter()
-  
-  async function login() {
-    if (!email.value || !password.value) {
-      alert('Bitte fülle alle Felder aus.')
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+import WalletLogin from '@/components/WalletLogin.vue'
+
+// Reaktive Variablen
+const email = ref('')
+const password = ref('')
+const otp = ref('')  // Variable für den 2FA-Code
+const is2FARequired = ref(false)  // Flag, ob 2FA erforderlich ist
+const router = useRouter()
+
+// Login-Funktion
+async function login() {
+  if (!email.value || !password.value) {
+    alert('Bitte fülle alle Felder aus.')
+    return
+  }
+
+  const loginData = {
+    email: email.value,
+    password: password.value,
+  }
+
+  // Wenn 2FA erforderlich ist, müssen wir den OTP hinzufügen
+  if (is2FARequired.value) {
+    if (!otp.value) {
+      alert("Bitte gib deinen 2FA-Code ein.")
       return
     }
-  
-    const payload = { email: email.value, password: password.value }
-    if (is2FARequired.value) payload.otp = otp.value
-  
-    try {
-      const res = await axios.post('/login', payload)
-      // Backend antwortet entweder mit "2FA erforderlich" oder "Login erfolgreich"
-      if (res.data.error === '2FA erforderlich') {
-        is2FARequired.value = true
-        alert('Bitte gib deinen 2FA-Code ein.')
-        return
+    loginData.otp = otp.value  // OTP zur Login-Daten hinzufügen
+  }
+
+  try {
+    const response = await axios.post('http://localhost:5001/login', loginData, {
+      withCredentials: true,  // ermöglicht das Senden von Cookies (wie Session-IDs)
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',  // Achte auf den richtigen Content-Type
       }
-      // erfolgreich
-      router.push('/profile')
-    } catch (e) {
-      const err = e.response?.data?.error
-      if (err === '2FA erforderlich') {
-        is2FARequired.value = true
-        alert('Bitte gib deinen 2FA-Code ein.')
-      } else if (err === 'Ungültiges OTP') {
-        alert('Falscher 2FA-Code.')
-      } else if (err === 'Ungültige E-Mail oder Passwort') {
-        alert('E-Mail oder Passwort falsch.')
-      } else {
-        alert('Login fehlgeschlagen: ' + (err || e.message))
-      }
+    })
+
+    console.log(response.data.message)
+    alert('Login erfolgreich.')
+    localStorage.setItem('isLoggedIn', 'true')  // Loginstatus speichern
+    router.push('/sign-pdf')  // Weiterleitung zur nächsten Seite
+  } catch (error) {
+    const err = error.response?.data?.error
+
+    if (err === '2FA erforderlich') {
+      // Falls 2FA erforderlich ist, zeigen wir das OTP-Eingabefeld
+      is2FARequired.value = true
+      alert('Bitte gib deinen 2FA-Code ein.')
+    } else if (err === 'Ungültiges OTP') {
+      alert('Der eingegebene 2FA-Code ist falsch.')
+    } else if (err === 'Ungültige E-Mail oder Passwort') {
+      alert('Überprüfe deine E-Mail und Passwort.')
+    } else {
+      alert('Login fehlgeschlagen: ' + (err || 'Unbekannter Fehler'))
     }
   }
-  </script>
-  
-  <style scoped>
+}
+</script>
+
+<style scoped>
   .login-container {
     max-width: 400px;
     margin: 4rem auto;
@@ -152,4 +167,3 @@
     transform: scale(1.02);
   }
 </style>
-  
