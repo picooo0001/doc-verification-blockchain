@@ -51,7 +51,7 @@ async function submitToBackend() {
   formData.append("documentId", "test-document-id")
 
   try {
-    const response = await fetch("/api/notarize", {
+    const response = await fetch("http://localhost:5001/api/notarize", {  // Port auf 5001 geändert
       method: "POST",
       body: formData,
     })
@@ -216,4 +216,3 @@ h1 {
   border-radius: 4px;
 }
 </style>
-
