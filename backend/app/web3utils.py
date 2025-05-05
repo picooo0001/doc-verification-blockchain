@@ -1,5 +1,6 @@
 from .config import Config
 from web3 import Web3
+from .models import Organization
 import json
 
 # Web3-Provider
@@ -21,4 +22,12 @@ contract = w3.eth.contract(address=contract_address, abi=contract_abi)
 #Debugging: print(f"[web3utils] Contract loaded at address: {contract.address}")
 
 # Default-Sender (Hardhat unlocked account)
-default_sender_account = w3.eth.accounts[0]
+default_sender_account = w3.eth.accounts[2]
+
+def get_user_org_address(user):
+    """
+    Liefert die on-chain Adresse (chain_address) der Organisation,
+    der der gegebene Flask-User zugeordnet ist.
+    """
+    org = Organization.query.get(user.organization_id)
+    return org.chain_address
