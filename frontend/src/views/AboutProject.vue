@@ -54,22 +54,28 @@
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  backdrop-filter: blur(8px); /* Glassmorphism */
 }
 
 .about-container h1 {
   font-size: 2.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  color: #333;
 }
 
 .about-container h2 {
   margin-top: 2rem;
   font-size: 1.75rem;
+  color: #333;
 }
 
 .about-container p, li {
   font-size: 1.125rem;
   line-height: 1.6;
-}.download-buttons {
+  color: #555;
+}
+
+.download-buttons {
   display: flex;
   flex-direction: row; /* nebeneinander */
   gap: 1rem;
@@ -80,18 +86,58 @@
 .download-btn {
   flex: 1 1 auto;
   padding: 0.75rem 1.5rem;
-  background-color: #22d3ee;
-    color: white;
+  background-color: #22d3ee; /* Cyan wie bei aktiven Links */
+  color: white;
   text-decoration: none;
   font-weight: bold;
   border-radius: 8px;
   text-align: center;
   transition: background-color 0.3s ease;
   min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .download-btn:hover {
   background-color: #6366f1;
 }
 
+ul {
+  padding-left: 20px;
+}
+
+ul li {
+  padding: 1rem;
+  background-color: rgba(245, 245, 245, 0.9);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+ul li p {
+  margin: 0.2rem 0;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .about-container {
+    padding: 1rem;
+  }
+
+  .download-buttons {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .download-btn {
+    min-width: unset;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+}
 </style>

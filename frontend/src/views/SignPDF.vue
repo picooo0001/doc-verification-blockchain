@@ -58,16 +58,12 @@
             <tr style="background-color: #f0f0f0;">
               <th style="text-align: left; padding: 0.5rem;">Block</th>
               <th style="text-align: left; padding: 0.5rem;">Zeitpunkt</th>
-              <th style="text-align: left; padding: 0.5rem;">Tx Hash</th>
-              <th style="text-align: left; padding: 0.5rem;">Dokumentenhash</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(entry, index) in history" :key="index" style="border-top: 1px solid #ddd;">
               <td style="padding: 0.5rem;">{{ entry.blockNumber }}</td>
               <td style="padding: 0.5rem;">{{ formatTimestamp(entry.timestamp) }}</td>
-              <td style="padding: 0.5rem; overflow-wrap: break-word;">{{ entry.txHash }}</td>
-              <td style="padding: 0.5rem; overflow-wrap: break-word;">{{ entry.documentHash }}</td>
             </tr>
           </tbody>
         </table>
@@ -240,48 +236,51 @@ async function verifyPdf() {
 <style scoped>
 .main-layout {
   display: flex;
+  flex-wrap: wrap;
   gap: 2rem;
   padding: 2rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+  background: #f2f4f7;
 }
 
 .left-column {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  width: 50%; /* Linksbereich hat nun 50% der Breite */
+  flex: 1 1 45%;
 }
 
-.left-column > div {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  background-color: rgba(255, 255, 255, 0.9); /* Gleicher Hintergrund wie im rechten Container */
+.left-column > div,
+.dashboard-container {
+  background: #ffffff;
+  border-radius: 16px;
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Gleicher Schatten wie im rechten Container */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.left-column > div:hover,
+.dashboard-container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
 .dashboard-container {
-  width: 50%; /* Dashboard Container nimmt 50% der Breite ein */
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  flex: 1 1 45%;
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
 h1 {
-  color: #333;
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+  color: #1a1a1a;
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .subtitle {
   font-size: 1rem;
-  color: #555;
+  color: #5e6e82;
   margin-bottom: 1.5rem;
 }
 
@@ -289,31 +288,49 @@ h1 {
   padding: 1rem;
 }
 
+input[type="file"] {
+  border: 2px dashed #d0d7de;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+  width: 100%;
+}
+
+input[type="file"]:hover {
+  border-color: #4CAF50;
+}
+
 .action-container {
   margin-top: 1rem;
 }
 
 .backend-btn {
-  background-color: #4CAF50;
+  background: linear-gradient(to right, #4CAF50, #45a049);
   color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
   border: none;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  transition: background 0.3s ease, transform 0.2s ease;
 }
 
 .backend-btn:hover {
-  background-color: #45a049;
+  transform: scale(1.03);
+  background: linear-gradient(to right, #45a049, #3e8e41);
 }
 
 iframe {
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .error-msg {
-  color: red;
+  color: #d32f2f;
   font-weight: bold;
 }
 
@@ -324,23 +341,27 @@ iframe {
 }
 
 hr {
-  margin: 1rem 0;
+  margin: 1.5rem 0;
+  border: none;
+  border-top: 1px solid #ddd;
 }
 
 ul {
-  padding-left: 20px;
+  padding-left: 0;
+  list-style: none;
 }
 
 ul li {
   padding: 1rem;
-  border-radius: 8px;
-  background-color: #f7f7f7;
+  border-radius: 12px;
+  background-color: #f9f9f9;
   margin-bottom: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 ul li p {
-  margin: 0.2rem 0;
+  margin: 0.3rem 0;
+  color: #333;
 }
 
 /* Mobile Styles */
@@ -349,14 +370,19 @@ ul li p {
     flex-direction: column;
     padding: 1rem;
   }
-  
-  .left-column, .dashboard-container {
+
+  .left-column,
+  .dashboard-container {
     width: 100%;
-    max-width: 100%;
   }
 
   h1 {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
+  }
+
+  .backend-btn {
+    width: 100%;
   }
 }
 </style>
+

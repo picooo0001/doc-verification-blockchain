@@ -11,7 +11,6 @@
     <!-- Rechter Container für den Login-Button -->
     <div class="auth-container">
       <template v-if="isLoggedIn">
-        <span class="logged-in-text">Signed in</span>
         <div class="profile-dropdown" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
           <img src="/Users/meat/doc-verification-blockchain/frontend/pics/profile.png" alt="Profil" class="profile-icon" />
           <div v-if="showDropdown" class="dropdown-menu">
@@ -19,6 +18,7 @@
             <a href="#" class="dropdown-item" @click.prevent="logout">Abmelden</a>
           </div>
         </div>
+        <span class="logged-in-text">Signed in</span>
       </template>
       <template v-else>
         <RouterLink to="/login" class="auth-link">Login</RouterLink>
@@ -60,137 +60,102 @@ export default {
 };
 </script>
 
-
-
 <style scoped>
-.logo-img {
-  width: 128px;      /* oder z. B. 80px, je nach Wunsch */
-  height: auto;
-  display: block;
-  margin: 0 auto;
-}
 .navbar {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Links und Login-Button am Rand */
-  height: 64px;
-  background-color: rgba(10, 15, 44, 0.75); /* halbtransparentes Dunkelblau */
-  backdrop-filter: blur(8px); /* Glassmorphism Effekt */
-  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue",
-    Helvetica, Arial, sans-serif;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-  border-radius: 16px;
-  margin: 2rem auto;
+  justify-content: space-between;
+  height: 72px;
   padding: 0 2rem;
-  width: 1000px;
-  z-index: 10;
+  margin: 2rem auto;
+  max-width: 1200px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  z-index: 100;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  margin: 0 20px;
+.logo-img {
+  width: 120px;
+  height: auto;
+  display: block;
 }
 
 .logo span {
-  font-size: 2.5rem; /* Logo ein kleines bisschen kleiner */
-  color: white;
+  font-size: 2rem;
+  color: #0f172a;
+  font-weight: 700;
 }
 
 .nav-links {
   display: flex;
-  gap: 30px;
   align-items: center;
-  flex-grow: 1; /* Verhindert, dass der Login-Button die Navigationselemente nach rechts drängt */
-  justify-content: center; /* Mittige Ausrichtung der Links */
+  gap: 2rem;
+  flex-grow: 1;
+  justify-content: center;
 }
 
 .nav-link {
-  font-size: 1.25rem; /* Kleiner, dafür edler */
-  font-weight: bold;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #1e293b;
   text-decoration: none;
-  color: #e2e8f0;
   padding: 0.5rem 1rem;
-  border-radius: 8px;
-  transition: background-color 0.3s ease;
+  border-radius: 10px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-/* Kein Farbwechsel bei visited */
-.nav-link:visited {
-  color: white;
-}
-
-/* Hover Effekt */
 .nav-link:hover {
-  background-color: rgba(56, 189, 248, 0.1);
-  border-color: #6366f1;
+  background-color: rgba(100, 116, 139, 0.1);
+  transform: scale(1.05);
 }
 
-/* Aktive Seite */
 .router-link-exact-active {
-  background-color: rgba(56, 189, 248, 0.3); /* Stärkere Hintergrundfarbe */
-  color: #0a0f2c; /* dunkle Schrift für Kontrast */
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Leichter Schatten für mehr Fokus */
-  transform: scale(1.05); /* Leichte Skalierung für einen "Hervorhebungseffekt" */
-  transition: all 0.3s ease; /* Weiche Übergänge */
+  background-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(56, 189, 248, 0.4);
+  font-weight: 600;
+  transform: scale(1.05);
+  transition: all 0.3s ease;
 }
 
-/* Auth Container für den Login Button */
 .auth-container {
   display: flex;
   align-items: center;
+  gap: 1rem;
+  margin-left: 4rem; /* Vergrößert den Abstand zwischen dem letzten Link (About) und dem Profilbereich */
 }
 
 .auth-link {
-  font-size: 1rem; /* Kleinere Schriftgröße */
-  font-weight: bold;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background-color: #4f46e5;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: none;
   text-decoration: none;
-  color: #e2e1e1;
-  padding: 0.25rem 0.75rem; /* Weniger Padding */
-  border-radius: 8px;
-  background-color: #22d3ee; /* Cyan wie bei aktiven Links */
-
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .auth-link:hover {
-  background-color: #4f46e5;
-}
-
-@media (max-width: 768px) {
-  .navbar {
-    flex-direction: column;
-    padding: 1rem;
-  }
-
-  .nav-links {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .auth-container {
-    margin-top: 10px;
-  }
-
-  .nav-link, .auth-link {
-    font-size: 1rem;
-  }
+  background-color: #4338ca;
+  transform: scale(1.03);
 }
 
 .logged-in-text {
-  color: #e2e1e1;
+  color: #475569;
+  font-size: 0.8rem;
   margin-right: 0.5rem;
-  font-weight: normal;
-  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue",
-  Helvetica, Arial, sans-serif;
-  font-size: 0.6rem; /* oder z.B. 0.8rem für noch kleiner */
 }
 
 .profile-icon {
-  width: 16px;
-  height: 16px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
+  object-fit: cover;
   cursor: pointer;
 }
 
@@ -202,28 +167,52 @@ export default {
 
 .dropdown-menu {
   position: absolute;
-  top: 100%;
+  top: 110%;
   right: 0;
-  background-color: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 8px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   padding: 0.5rem 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  z-index: 20;
-  min-width: 120px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+  z-index: 999;
 }
 
 .dropdown-item {
   display: block;
-  padding: 0.5rem 1rem;
-  color: #e2e8f0;
+  padding: 0.75rem 1.25rem;
+  color: #1e293b;
+  font-size: 0.9rem;
   text-decoration: none;
-  font-size: 0.85rem;
   transition: background-color 0.2s ease;
 }
 
 .dropdown-item:hover {
-  background-color: #334155;
+  background-color: #f1f5f9;
+  color: #111827;
 }
 
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    height: auto;
+    padding: 1rem;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .auth-container {
+    margin-top: 1rem; /* Vergrößert den Abstand bei kleinen Bildschirmen */
+  }
+
+  .nav-link, .auth-link {
+    width: 100%;
+    text-align: center;
+  }
+}
 </style>
