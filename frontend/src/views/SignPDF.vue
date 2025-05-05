@@ -3,24 +3,24 @@
     <h1>PDF Signieren</h1>
     <p class="subtitle">Lade ein oder mehrere PDF-Dateien hoch, um sie mit der Blockchain zu verknüpfen.</p>
 
-  <div class="file-upload-wrapper">
-    <FileUpload
-      name="demo[]"
-      url="/api/upload"
-      @upload="onAdvancedUpload"
-      :multiple="true"
-      accept="application/pdf"
-      :maxFileSize="1000000"
-      :showUploadButton="false"
-      :showCancelButton="false"
-    >
-      <template #empty>
-        <div class="upload-placeholder">
-          <span>Drag and drop PDFs here to upload</span>
-        </div>
-      </template>
-    </FileUpload>
-  </div>
+    <div class="file-upload-wrapper">
+      <FileUpload
+        name="demo[]"
+        url="/api/upload"
+        @upload="onAdvancedUpload"
+        :multiple="true"
+        accept="application/pdf"
+        :maxFileSize="1000000"
+        :showUploadButton="false"
+        :showCancelButton="false"
+      >
+        <template #empty>
+          <div class="upload-placeholder">
+            <span>Drag and drop PDFs here to upload</span>
+          </div>
+        </template>
+      </FileUpload>
+    </div>
 
     <div class="action-container">
       <button @click="submitToBackend" class="backend-btn">⛓️ Mit Blockchain signieren</button>
@@ -40,25 +40,33 @@ import { ref } from 'vue'
 
 const pdfFiles = ref([])
 
-function onAdvancedUpload(event) {
-  console.log('Upload Event:', event)
-  pdfFiles.value = event.files
-}
-
-function signWithBlockchain() {
+async function submitToBackend() {
   if (pdfFiles.value.length === 0) {
     alert('Bitte lade eine PDF-Datei hoch, um sie zu signieren.')
     return
   }
 
-  console.log('Signiere mit der Blockchain...', pdfFiles.value)
-  alert('Das Dokument wurde erfolgreich mit der Blockchain verknüpft!')
+  const formData = new FormData()
+  formData.append("file", pdfFiles.value[0])
+  formData.append("documentId", "test-document-id")
+
+  try {
+    const response = await fetch("/api/notarize", {
+      method: "POST",
+      body: formData,
+    })
+
+    const data = await response.json()
+    if (data.txHash) {
+      alert(`Dokument erfolgreich notarisiert! Transaktions-Hash: ${data.txHash}`)
+    } else {
+      alert('Fehler: ' + data.error)
+    }
+  } catch (err) {
+    alert('Ein Fehler ist aufgetreten: ' + err.message)
+  }
 }
 
-function submitToBackend() {
-  signWithBlockchain();
-  console.log('Sende Daten ans Backend...');
-}
 </script>
 
 <style scoped>
