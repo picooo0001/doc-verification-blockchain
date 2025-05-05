@@ -4,7 +4,7 @@
     <div class="nav-links">
       <RouterLink to="/sign-pdf" class="nav-link">Sign PDF</RouterLink>
       <div class="logo">
-        <img src="/Users/meat/doc-verification-blockchain/frontend/pics/logo.png" alt="Logo" class="logo-img" />
+        <img src="../assets/blockchain-informationen-flexibel-sicher.1.4" alt="Logo" class="logo-img" />
       </div>
       <RouterLink to="/about" class="nav-link">About</RouterLink>
     </div>
@@ -13,7 +13,7 @@
       <template v-if="isLoggedIn">
         <span class="logged-in-text">Signed in</span>
         <div class="profile-dropdown" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
-          <img src="/Users/meat/doc-verification-blockchain/frontend/pics/profile.png" alt="Profil" class="profile-icon" />
+          <img src="../assets/logo.png" alt="Profil" class="profile-icon" />
           <div v-if="showDropdown" class="dropdown-menu">
             <RouterLink to="/profile" class="dropdown-item">Konto</RouterLink>
             <a href="#" class="dropdown-item" @click.prevent="logout">Abmelden</a>
@@ -28,8 +28,8 @@
 </template>
 
 <script>
-import image from '/Users/meat/doc-verification-blockchain/frontend/pics/logo.png';
-import image1 from '/Users/meat/doc-verification-blockchain/frontend/pics/profile.png';
+import image from '../assets/logo.png';
+import image1 from '../assets/profile.png';
 
 export default {
   data() {
