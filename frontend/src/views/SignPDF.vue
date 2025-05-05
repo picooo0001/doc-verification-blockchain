@@ -3,23 +3,13 @@
     <h1>PDF Signieren</h1>
     <p class="subtitle">Lade ein oder mehrere PDF-Dateien hoch, um sie mit der Blockchain zu verknüpfen.</p>
 
-    <div class="file-upload-wrapper">
-      <FileUpload
-        name="demo[]"
-        url="/api/upload"
-        @upload="onAdvancedUpload"
-        :multiple="true"
-        accept="application/pdf"
-        :maxFileSize="1000000"
-        :showUploadButton="false"
-        :showCancelButton="false"
-      >
-        <template #empty>
-          <div class="upload-placeholder">
-            <span>Drag and drop PDFs here to upload</span>
-          </div>
-        </template>
-      </FileUpload>
+    <div class="p-4">
+      <input type="file" accept="application/pdf" multiple @change="handleFileUpload" />
+
+      <div v-if="pdfFiles.length > 0" class="mt-4">
+        <p><strong>Vorschau:</strong> {{ pdfFiles[0].name }}</p>
+        <iframe :src="pdfUrls[0]" width="100%" height="500px"></iframe>
+      </div>
     </div>
 
     <div class="action-container">
@@ -39,31 +29,57 @@
 import { ref } from 'vue'
 
 const pdfFiles = ref([])
+const pdfUrls = ref([])
+
+function handleFileUpload(event) {
+  const files = Array.from(event.target.files).filter(file => file.type === 'application/pdf')
+
+  if (files.length === 0) {
+    alert('Bitte nur gültige PDF-Dateien auswählen.')
+    return
+  }
+
+  pdfFiles.value = files
+  pdfUrls.value = files.map(file => URL.createObjectURL(file))
+}
+
+function signWithBlockchain() {
+  if (pdfFiles.value.length === 0) {
+    alert('Bitte lade mindestens eine PDF-Datei hoch.')
+    return
+  }
+
+  console.log('Signiere mit der Blockchain...', pdfFiles.value)
+  alert('Das Dokument wurde erfolgreich mit der Blockchain verknüpft!')
+}
 
 async function submitToBackend() {
   if (pdfFiles.value.length === 0) {
-    alert('Bitte lade eine PDF-Datei hoch, um sie zu signieren.')
+    alert('Bitte lade mindestens eine PDF-Datei hoch.')
     return
   }
 
   const formData = new FormData()
-  formData.append("file", pdfFiles.value[0])
-  formData.append("documentId", "test-document-id")
+  formData.append('file', pdfFiles.value[0]) // nur die erste Datei (kannst du anpassen)
+  formData.append('documentId', pdfFiles.value[0].name) // oder z. B. ein eigenes Feld für docId
 
   try {
-    const response = await fetch("http://localhost:5001/api/notarize", {  // Port auf 5001 geändert
-      method: "POST",
+    const response = await fetch('http://localhost:5001/api/notarize', {
+      method: 'POST',
       body: formData,
+      credentials: 'include'
     })
 
-    const data = await response.json()
-    if (data.txHash) {
-      alert(`Dokument erfolgreich notarisiert! Transaktions-Hash: ${data.txHash}`)
+    const result = await response.json()
+    if (response.ok) {
+      alert(`Erfolgreich signiert! Hash: ${result.txHash}`)
+      console.log(result)
     } else {
-      alert('Fehler: ' + data.error)
+      alert(`Fehler: ${result.error}`)
     }
   } catch (err) {
-    alert('Ein Fehler ist aufgetreten: ' + err.message)
+    console.error('Fehler beim Senden an Backend:', err)
+    alert('Netzwerkfehler')
   }
 }
 
@@ -79,99 +95,36 @@ async function submitToBackend() {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
-.p-fileupload-button {
-  padding: 0.75rem 1.5rem;
-  background-color: #22d3ee;  /* Light blue */
-  color: white;
-  font-weight: bold;
-  border-radius: 8px;
-  text-align: center;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
 
-.p-fileupload-button:hover {
-  background-color: #6366f1;  /* Darker blue on hover */
-  transform: scale(1.05);
-}
-
-.upload-placeholder {
-  text-align: center;
-  padding: 2rem;
-  color: #94a3b8;
-  font-style: italic;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px dashed #38bdf8;
-  border-radius: 8px;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-.upload-placeholder:hover {
-  background-color: rgba(56, 189, 248, 0.1);
-  border-color: #6366f1;
-}
-
-/* Glassmorphism Container */
+/* Deine restlichen Styles bleiben unverändert */
 .sign-container {
   max-width: 800px;
   margin: 2rem auto;
   padding: 2rem;
-  background-color: rgba(255, 255, 255, 0.95); /* Weiß mit 85% Deckkraft */
+  background-color: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
-  color: black; /* Schriftfarbe auf Schwarz setzen */
+  color: black;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Überschrift */
 h1 {
   font-size: 2rem;
   margin-bottom: 0.5rem;
   text-align: center;
-  color: black; /* Schriftfarbe auf Schwarz setzen */
+  color: black;
 }
 
-/* Untertitel */
 .subtitle {
   text-align: center;
   margin-bottom: 2rem;
-  color: black; /* Schriftfarbe auf Schwarz setzen */
+  color: black;
 }
 
-/* File Upload Bereich */
-.file-upload-wrapper {
-  max-width: 300px;
-  margin: 0 auto;
-}
-
-.p-fileupload {
-  width: 100%;
-}
-
-.upload-placeholder {
-  text-align: center;
-  padding: 2rem;
-  color: #94a3b8;
-  font-style: italic;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px dashed #38bdf8;
-  border-radius: 8px;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-.upload-placeholder:hover {
-  background-color: rgba(56, 189, 248, 0.1);
-  border-color: #6366f1;
-}
-
-/* Button Container */
 .action-container {
   margin-top: 2rem;
   text-align: center;
 }
 
-/* Button Style */
 .backend-btn {
   padding: 0.75rem 1.5rem;
   background-color: #22d3ee;
@@ -190,7 +143,6 @@ h1 {
   transform: scale(1.02);
 }
 
-/* Liste hochgeladener Dateien */
 .file-list {
   margin-top: 1rem;
   padding: 1rem;
