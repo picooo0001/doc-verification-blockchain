@@ -95,7 +95,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 
+const toast = useToast()
 const stats = ref(null)
 const pdfFiles = ref([])
 const pdfUrls = ref([])
@@ -170,17 +172,22 @@ onMounted(() => {
 function handleFileUpload(event) {
   const files = Array.from(event.target.files).filter(file => file.type === 'application/pdf')
   if (files.length === 0) {
-    alert('Bitte nur gültige PDF-Dateien auswählen.')
-    return
-  }
+  toast.warning('Bitte nur gültige PDF-Dateien auswählen.')
+  return
+}
   pdfFiles.value = files
   pdfUrls.value = files.map(file => URL.createObjectURL(file))
 }
 
 // Funktion zum Senden der Datei an das Backend zur Signierung
 const currentDocumentId = ref(null)
-
 async function submitToBackend() {
+  // Überprüfen, ob eine Datei ausgewählt wurde
+  if (pdfFiles.value.length === 0) {
+    toast.warning('Bitte lade eine PDF-Datei zum Signieren hoch.')
+    return
+  }
+
   const file = pdfFiles.value[0]
   const documentId = file.name   // oder eine UUID etc.
   currentDocumentId.value = documentId
@@ -189,19 +196,35 @@ async function submitToBackend() {
   formData.append('file', file)
   formData.append('documentId', documentId)
 
-  const res = await fetch('http://localhost:5001/api/notarize', {
-    method: 'POST',
-    body: formData,
-    credentials: 'include'
-  })
+  try {
+    const res = await fetch('http://localhost:5001/api/notarize', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+    })
 
-  const result = await res.json()
+    // Falls die Antwort des Servers nicht erfolgreich ist, den Fehler behandeln
+    if (!res.ok) {
+      const result = await res.json()
+      // Wenn eine spezifische Fehlermeldung zurückgegeben wird
+      if (result.error) {
+        toast.error(result.error || 'Fehler beim Signieren.')
+      } else {
+        toast.error('Unbekannter Fehler beim Signieren.')
+      }
+      return
+    }
 
-  if (res.ok) {
-    alert('Erfolgreich signiert')
-    await loadHistory(currentDocumentId.value)
-  } else {
-    alert(result.error)
+    const result = await res.json()
+
+    // Wenn das Dokument erfolgreich signiert wurde
+    if (res.ok) {
+      toast.success('Dokument erfolgreich signiert!')
+      await loadHistory(currentDocumentId.value)
+    }
+  } catch (error) {
+    // Falls ein Fehler beim Netzwerkaufbau oder Serveraufruf auftritt
+    toast.error('Netzwerkfehler oder Server nicht erreichbar.')
   }
 }
 
@@ -216,7 +239,7 @@ function checkPdf(event) {
 // Funktion zur Verifikation des PDFs
 async function verifyPdf() {
   if (!checkPdfFile.value) {
-    alert('Bitte lade eine PDF-Datei zum Prüfen hoch.')
+    toast.warning('Bitte lade eine PDF-Datei zum Prüfen hoch.')
     return
   }
 
@@ -230,24 +253,32 @@ async function verifyPdf() {
       credentials: 'include'
     })
 
-    const result = await response.json()
+    let result = {}
+    try {
+      result = await response.json()
+    } catch (e) {
+      // JSON konnte nicht geparst werden
+      toast.error('Serverantwort konnte nicht gelesen werden.')
+      return
+    }
 
     if (response.ok && result.verified) {
       const date = new Date(result.timestamp * 1000).toLocaleString()
-      checkResult.value = `✅ Dokument wurde am ${date} verifiziert.`
+      toast.success(`Dokument wurde am ${date} verifiziert.`)
     } else if (response.status === 404) {
-      checkResult.value = '❌ Dokument nicht in der Blockchain gefunden.'
+      toast.warning('Dokument nicht in der Blockchain gefunden.')
     } else if (response.status === 403) {
-      checkResult.value = '⛔ Nicht berechtigt, dieses Dokument zu prüfen.'
+      toast.error('Nicht berechtigt, dieses Dokument zu prüfen.')
     } else {
-      checkResult.value = '❌ Unbekannter Fehler bei der Prüfung.'
+      toast.error(result.error || 'Unbekannter Fehler bei der Prüfung.')
     }
 
   } catch (err) {
-    console.error('Fehler beim Prüfen:', err)
-    checkResult.value = '🌐 Netzwerkfehler oder Server nicht erreichbar.'
+    console.error('Netzwerkfehler:', err)
+    toast.error('Netzwerkfehler oder Server nicht erreichbar.')
   }
 }
+
 </script>
 
 <style>
@@ -256,8 +287,8 @@ async function verifyPdf() {
   gap: 2.5rem;
   padding: 3rem 2rem 2rem 2rem;
   min-height: 100vh;
-  background: linear-gradient(90deg, #fff 0%, #e7d6fb 35%, #cdb6ec 70%, #eab6d8 100%);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(45deg, #ffffff 0%, #ffffff 60%, #e7d6fb 75%, #cdb6ec 90%, #eab6d8 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 .sign-container h1,
 .check-container h1,

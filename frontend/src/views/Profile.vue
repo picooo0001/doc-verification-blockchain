@@ -112,13 +112,11 @@ export default {
 <style scoped>
 .main-layout {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 2.5rem;
   padding: 3rem 2rem 2rem 2rem;
   min-height: 100vh;
-  background: linear-gradient(90deg, #fff 0%, #e7d6fb 35%, #cdb6ec 70%, #eab6d8 100%);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(45deg, #ffffff 0%, #ffffff 60%, #e7d6fb 75%, #cdb6ec 90%, #eab6d8 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 .profile-container {
   max-width: 1200px;

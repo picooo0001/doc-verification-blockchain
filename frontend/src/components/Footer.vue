@@ -1,4 +1,5 @@
 <template>
+  <div class="main-layout">
   <footer class="footer">
     <div class="footer-content">
       <p>© {{ currentYear }} PDF-Sign with Blockchain</p>
@@ -8,6 +9,7 @@
       </div>
     </div>
   </footer>
+</div>
 </template>
 
 <script setup>
@@ -16,16 +18,23 @@ const currentYear = ref(new Date().getFullYear())
 </script>
 
 <style>
+.main-layout {
+  display: flex;
+  gap: 2.5rem;
+  padding: 3rem 2rem 2rem 2rem;
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
 html, body {
   min-height: 100vh;
-  background: linear-gradient(90deg, #fff 0%, #f3e7fa 50%, #e0c3fc 80%, #8ec5fc 100%);
+  background: #ffffff;
   margin: 0;
   padding: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 body {
   min-height: 100vh;
-  background: linear-gradient(90deg, #fff 0%, #f3e7fa 50%, #e0c3fc 80%, #8ec5fc 100%);
   margin: 0;
   padding: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -33,7 +42,7 @@ body {
 .footer {
   background: transparent; /* oder rgba(255,255,255,0.8) für leichten Weißton */
 
-  color: linear-gradient(90deg, #fff 0%, #f3e7fa 50%, #e0c3fc 80%, #8ec5fc 100%);
+
   padding: 1.3rem 2rem;
   width: 100%;
   max-width: 1100px;
