@@ -1,11 +1,13 @@
 <template>
+  <div class="main-layout">
   <div class="about-container">
     <h1>Über dieses Projekt</h1>
 
     <!-- 🔽 Download-Buttons -->
+    <h2>Downloads</h2>
     <div class="download-buttons">
-      <a href="/downloads/seminararbeit.pdf" download class="download-btn">📄 Seminararbeit herunterladen</a>
-      <a href="/downloads/praesentation.pdf" download class="download-btn">📊 Präsentation herunterladen</a>
+      <a href="/downloads/seminararbeit.pdf" download class="trial-btn">Seminararbeit</a>
+      <a href="/downloads/praesentation.pdf" download class="trial-btn">Präsentation</a>
     </div>
 
     <p>
@@ -43,55 +45,92 @@
       Die entwickelte Lösung zeigt, wie Blockchain-Technologie zur digitalen Vertrauensbildung beitragen kann. In Zukunft könnten Erweiterungen wie Mehrfachsignaturen, NFT-basierte Besitznachweise oder eine Einbindung in Behördenprozesse denkbar sein.
     </p>
   </div>
+</div>
 </template>
 
 <style scoped>
+.main-layout {
+  display: flex;
+  gap: 2.5rem;
+  padding: 3rem 2rem 2rem 2rem;
+  min-height: 100vh;
+  background: linear-gradient(90deg, #fff 0%, #e7d6fb 35%, #cdb6ec 70%, #eab6d8 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
 .about-container {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 2rem auto;
-  padding: 2rem;
-  background-color: rgba(255, 255, 255, 0.95); /* Weiß mit 85% Deckkraft */
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  padding: 2.5rem 2rem 2rem 2rem;
+  background: linear-gradient(180deg, #fff 0%, #f6eefd 60%, #f2e4f4 100%);
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(31, 35, 40, 0.12);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+  transition: box-shadow 0.18s;
+}
+
+.about-container:hover {
+  transform: translateY(-5px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .about-container h1 {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
+  color: #1a1726;
+  font-weight: 800;
   margin-bottom: 1rem;
 }
 
 .about-container h2 {
   margin-top: 2rem;
-  font-size: 1.75rem;
+  font-size: 1.5rem;
+  color: #232150;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
-.about-container p, li {
+.about-container p,
+.about-container li {
   font-size: 1.125rem;
   line-height: 1.6;
-}.download-buttons {
+  color: #232150;
+}
+
+.download-buttons {
   display: flex;
-  flex-direction: row; /* nebeneinander */
+  flex-direction: row;
   gap: 1rem;
   margin-bottom: 2rem;
-  flex-wrap: wrap; /* falls bei kleinen Bildschirmen nötig */
+  flex-wrap: wrap;
 }
 
-.download-btn {
-  flex: 1 1 auto;
-  padding: 0.75rem 1.5rem;
-  background-color: #22d3ee;
-    color: white;
+.trial-btn {
+  background: #1a1726;
   text-decoration: none;
-  font-weight: bold;
-  border-radius: 8px;
-  text-align: center;
-  transition: background-color 0.3s ease;
-  min-width: 200px;
+  color: #fff;
+  border: 2px solid transparent; /* <-- hier */
+  border-radius: 7px;              /* Weniger stark abgerundet */
+  padding: 0.7rem 1.7rem;          /* Weniger hoch und schmaler */
+  font-size: 1.15rem;              /* Kleinere Schrift */
+  font-weight: 700;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+  box-shadow: none;
+  outline: none;
+  display: inline-block;
+  letter-spacing: 0.01em;
 }
 
-.download-btn:hover {
-  background-color: #6366f1;
+.trial-btn:hover,
+.trial-btn:focus {
+  background: #ffffff;        /* weißer Hintergrund */
+  color: #000000;             /* schwarze Schrift */
+  border: 2px solid #000000;  /* schwarzer Rand */
+  transform: translateY(-2px) scale(1.03);
 }
 
 </style>

@@ -1,4 +1,5 @@
 <template>
+  <div class="main-layout" v-if="user">
   <div class="profile-container" v-if="user">
     <h1>Profil</h1>
 
@@ -28,7 +29,10 @@
   </div>
   <div v-else>
     <p>Lade Benutzerdaten...</p>
+
   </div>
+</div>
+
 </template>
 <script>
 export default {
@@ -106,12 +110,23 @@ export default {
 
 
 <style scoped>
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+  padding: 3rem 2rem 2rem 2rem;
+  min-height: 100vh;
+  background: linear-gradient(90deg, #fff 0%, #e7d6fb 35%, #cdb6ec 70%, #eab6d8 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
 .profile-container {
-  max-width: 800px;
+  max-width: 1200px;
+  border-radius: 6px; /* wie der Button im Screenshot */
   margin: 2rem auto;
   padding: 2rem;
   background-color: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
+  
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
@@ -142,7 +157,7 @@ export default {
   background-color: #22d3ee;
   color: white;
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: 6px;
   border: none;
   cursor: pointer;
   transition: background-color 0.3s ease;
@@ -219,5 +234,29 @@ input:checked + .slider:before {
   max-width: 200px;
 }
 
+.trial-btn {
+  background: #1a1726;
+  color: #fff;
+  border: 2px solid transparent; /* <-- hier */
+  border-radius: 7px;              /* Weniger stark abgerundet */
+  padding: 0.7rem 1.7rem;          /* Weniger hoch und schmaler */
+  font-size: 1.15rem;              /* Kleinere Schrift */
+  font-weight: 700;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+  box-shadow: none;
+  outline: none;
+  display: inline-block;
+  letter-spacing: 0.01em;
+}
+
+.trial-btn:hover,
+.trial-btn:focus {
+  background: #ffffff;        /* weißer Hintergrund */
+  color: #000000;             /* schwarze Schrift */
+  border: 2px solid #000000;  /* schwarzer Rand */
+  transform: translateY(-2px) scale(1.03);
+}
 
 </style>

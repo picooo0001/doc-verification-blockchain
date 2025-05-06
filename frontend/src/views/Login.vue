@@ -1,4 +1,5 @@
 <template>
+  <div class="main-layout">
   <div class="login-container">
     <h1>Login</h1>
     <p class="subtitle">Melde dich mit deinen Organisations-Credentials an.</p>
@@ -27,13 +28,14 @@
         />
       </div>
       <div class="action-container">
-        <button class="backend-btn" type="submit">Login</button>
+        <button class="trial-btn" type="submit">Login</button>
       </div>
     </form>
       <hr />
       <h3>Oder per Wallet:</h3>
       <WalletLogin />
   </div>
+</div>
 </template>
 
 <script setup>
@@ -102,12 +104,21 @@ async function login() {
 </script>
 
 <style scoped>
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+  padding: 3rem 2rem 2rem 2rem;
+  min-height: 100vh;
+  background: linear-gradient(90deg, #fff 0%, #e7d6fb 35%, #cdb6ec 70%, #eab6d8 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
   .login-container {
     max-width: 400px;
-    margin: 4rem auto;
-    padding: 2rem;
-    background-color: rgba(255, 255, 255, 0.95);
-    border-radius: 16px;
+    padding: 2.5rem 2rem 2rem 2rem;
+  margin-bottom: 2rem;
+    background: linear-gradient(180deg, #fff 0%, #f6eefd 60%, #f2e4f4 100%);    border-radius: 16px;
     color: black;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     text-align: center;
@@ -166,4 +177,28 @@ async function login() {
     background-color: #6366f1;
     transform: scale(1.02);
   }
+  .trial-btn {
+  background: #1a1726;
+  color: #fff;
+  border: 2px solid transparent; /* <-- hier */
+  border-radius: 7px;              /* Weniger stark abgerundet */
+  padding: 0.7rem 1.7rem;          /* Weniger hoch und schmaler */
+  font-size: 1.15rem;              /* Kleinere Schrift */
+  font-weight: 700;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+  box-shadow: none;
+  outline: none;
+  display: inline-block;
+  letter-spacing: 0.01em;
+}
+
+.trial-btn:hover,
+.trial-btn:focus {
+  background: #ffffff;        /* weißer Hintergrund */
+  color: #000000;             /* schwarze Schrift */
+  border: 2px solid #000000;  /* schwarzer Rand */
+  transform: translateY(-2px) scale(1.03);
+}
 </style>

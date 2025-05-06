@@ -1,7 +1,7 @@
 <template>
   <footer class="footer">
     <div class="footer-content">
-      <p>© 2025 PDF-Sign with Blockchain</p>
+      <p>© {{ currentYear }} PDF-Sign with Blockchain</p>
       <div class="footer-links">
         <a href="/contact">Contact & Legal</a>
         <a href="/download">Downloads</a>
@@ -11,45 +11,74 @@
 </template>
 
 <script setup>
-// keine Logik nötig, außer du willst dynamisches Jahr etc.
+import { ref } from 'vue'
+const currentYear = ref(new Date().getFullYear())
 </script>
 
-<style scoped>
+<style>
+html, body {
+  min-height: 100vh;
+  background: linear-gradient(90deg, #fff 0%, #f3e7fa 50%, #e0c3fc 80%, #8ec5fc 100%);
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+body {
+  min-height: 100vh;
+  background: linear-gradient(90deg, #fff 0%, #f3e7fa 50%, #e0c3fc 80%, #8ec5fc 100%);
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
 .footer {
-  background-color: rgba(10, 15, 44, 0.75); /* Dunkler halbtransparenter Hintergrund */
-  backdrop-filter: blur(8px); /* Glassmorphism */
-  color: white;
-  padding: 1.5rem 2rem;
-    text-align: center;
-  width: 1000px;
-  margin: 3rem auto 1rem auto;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue",
-    Helvetica, Arial, sans-serif;
+  background: transparent; /* oder rgba(255,255,255,0.8) für leichten Weißton */
+
+  color: linear-gradient(90deg, #fff 0%, #f3e7fa 50%, #e0c3fc 80%, #8ec5fc 100%);
+  padding: 1.3rem 2rem;
+  width: 100%;
+  max-width: 1100px;
+  margin: 3rem auto 1.5rem auto;
+  border-radius: 14px;
+  box-shadow: 0 4px 24px 0 rgba(31, 35, 40, 0.06);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.05rem;
 }
 
 .footer-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .footer-links {
   display: flex;
-  gap: 2rem;
+  gap: 2.2rem;
   flex-wrap: wrap;
 }
 
 .footer-links a {
-  color: #22d3ee; /* Cyan wie bei aktiven Links */
+  color: #6c6c6c;
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.3s ease;
+  transition: color 0.2s;
+  border-radius: 0.3rem;
+  padding: 0.1rem 0.6rem;
 }
 
-.footer-links a:hover {
-  color: #38bdf8; /* helleres Cyan beim Hover */
+.footer-links a:hover,
+.footer-links a:focus {
+  color: #111;
+  background: #f5f5fa;
+}
+
+@media (max-width: 700px) {
+  .footer {
+    padding: 1.1rem 0.7rem;
+    max-width: 98vw;
+  }
+  .footer-links {
+    gap: 1.2rem;
+  }
 }
 </style>

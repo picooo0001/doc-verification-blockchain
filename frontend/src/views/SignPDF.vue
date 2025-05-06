@@ -4,9 +4,12 @@
     <div class="left-column">
       <!-- PDF Signieren -->
       <div class="sign-container">
-        <h1>PDF Signieren</h1>
-        <p class="subtitle">Lade ein oder mehrere PDF-Dateien hoch, um sie mit der Blockchain zu verknüpfen.</p>
+        <div class="center-content">
 
+        <h1>PDF Signieren</h1>
+      </div>
+        <p class="subtitle">Lade ein oder mehrere PDF-Dateien hoch, um sie mit der Blockchain zu verknüpfen.</p>
+      
         <div class="p-4">
           <input type="file" accept="application/pdf" multiple @change="handleFileUpload" />
 
@@ -17,20 +20,26 @@
         </div>
 
         <div class="action-container">
-          <button @click="submitToBackend" class="backend-btn">⛓️ Mit Blockchain signieren</button>
+          <div class="center-content">
+          <button @click="submitToBackend" class="trial-btn">Signieren</button>
         </div>
+      </div>
       </div>
 
       <!-- PDF Prüfen -->
       <div class="check-container">
+        <div class="center-content">
         <h1>PDF Prüfen</h1>
+      </div>
         <p class="subtitle">Prüfe, ob eine PDF bereits in der Blockchain hinterlegt ist.</p>
 
         <div class="p-4">
           <input type="file" accept="application/pdf" @change="checkPdf" />
 
           <div class="action-container">
-            <button class="backend-btn" @click="verifyPdf">✅ Prüfen</button>
+            <div class="center-content">
+            <button class="trial-btn" @click="verifyPdf">Prüfen</button>
+          </div>
           </div>
 
           <div v-if="checkResult">
@@ -42,8 +51,12 @@
 
     <!-- Dashboard -->
     <div class="dashboard-container">
+      <div class="center-content">
+
       <h1>📊 Dashboard</h1>
+    </div>
       <p>Statistiken über signierte und überprüfte Dokumente erscheinen hier.</p>
+      
       <div v-if="stats && !stats.error">
         <p><strong>🧾 Gesamtzahl der Signaturen:</strong> {{ stats.total }}</p>
         <p><strong>📅 Letzte Signatur:</strong> {{ stats.latestDate }}</p>
@@ -237,94 +250,128 @@ async function verifyPdf() {
 }
 </script>
 
-<style scoped>
+<style>
 .main-layout {
   display: flex;
-  gap: 2rem;
-  padding: 2rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  gap: 2.5rem;
+  padding: 3rem 2rem 2rem 2rem;
+  min-height: 100vh;
+  background: linear-gradient(90deg, #fff 0%, #e7d6fb 35%, #cdb6ec 70%, #eab6d8 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
+.sign-container h1,
+.check-container h1,
+.dashboard-container h1 {
+  font-size: 2.2rem;
+  color: #1a1726;
+  font-weight: 800;
+}
+
+
 
 .left-column {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  width: 50%; /* Linksbereich hat nun 50% der Breite */
+  gap: 2.5rem;
+  width: 50%;
 }
 
-.left-column > div {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  background-color: rgba(255, 255, 255, 0.9); /* Gleicher Hintergrund wie im rechten Container */
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Gleicher Schatten wie im rechten Container */
-}
-
+.sign-container,
+.check-container,
 .dashboard-container {
-  width: 50%; /* Dashboard Container nimmt 50% der Breite ein */
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(180deg, #fff 0%, #f6eefd 60%, #f2e4f4 100%);
+  border-radius: 6px; /* wie der Button im Screenshot */
+  box-shadow: 0 8px 32px rgba(31, 35, 40, 0.12);
+  padding: 2.5rem 2rem 2rem 2rem;
+  margin-bottom: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.3rem;
+  backdrop-filter: blur(6px);
+  transition: box-shadow 0.18s;
 }
 
-h1 {
-  color: #333;
+.sign-container:hover,
+.check-container:hover,
+.dashboard-container:hover {
+  transform: translateY(-5px); /* leichtes Hüpfen nach oben */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.dashboard-container {
+  width: 50%;
+}
+
+h1, h2 {
+  color: #232150;
   font-size: 1.5rem;
   margin-bottom: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .subtitle {
-  font-size: 1rem;
-  color: #555;
+  font-size: 1.1rem;
+  color: #000000;
   margin-bottom: 1.5rem;
 }
 
 .p-4 {
-  padding: 1rem;
+  padding: 1rem 0;
 }
 
 .action-container {
-  margin-top: 1rem;
+  margin-top: 1.1rem;
 }
 
 .backend-btn {
-  background-color: #4CAF50;
-  color: white;
-  padding: 0.5rem 1rem;
+  background-color: #6c4ae2;
+  color: #fff;
+  padding: 0.65rem 1.3rem;
   border-radius: 8px;
   border: none;
   cursor: pointer;
-  transition: background-color 0.3s;
+  font-weight: 600;
+  font-size: 1.08rem;
+  transition: background-color 0.18s, box-shadow 0.18s;
+  box-shadow: 0 2px 8px rgba(108,74,226,0.09);
+}
+.backend-btn:hover {
+  background-color: #4d38b0;
 }
 
-.backend-btn:hover {
-  background-color: #45a049;
+input[type="file"] {
+  background: #f5f5fa;
+  color: #232150;
+  border: 1px solid #e0c3fc;
+  border-radius: 6px;
+  padding: 0.55em;
+  font-size: 1em;
+  width: 100%;
+  margin-bottom: 0.8rem;
 }
 
 iframe {
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  border-radius: 12px;
+  border: 1.5px solid #e0c3fc;
+  background: #fff;
+  margin-top: 0.7rem;
 }
 
 .error-msg {
-  color: red;
+  color: #e24329;
   font-weight: bold;
 }
 
 .dashboard-placeholder {
   text-align: center;
   font-size: 1.2rem;
-  color: #888;
+  color: #a2a1a6;
 }
 
 hr {
   margin: 1rem 0;
+  border: none;
+  border-top: 1.5px solid #e0c3fc;
 }
 
 ul {
@@ -333,30 +380,91 @@ ul {
 
 ul li {
   padding: 1rem;
-  border-radius: 8px;
-  background-color: #f7f7f7;
+  border-radius: 10px;
+  background-color: #f5f5fa;
   margin-bottom: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(31,35,40,0.08);
+  color: #232150;
 }
 
 ul li p {
   margin: 0.2rem 0;
 }
 
+/* Tabellenkopf und Zellen */
+table {
+  background: none;
+  color: #232150;
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 1em;
+}
+th {
+  background: #f5f5fa;
+  color: #6c4ae2;
+  font-weight: 700;
+  padding: 0.6rem;
+  border-bottom: 2px solid #e0c3fc;
+}
+td {
+  background: none;
+  color: #232150;
+  border-top: 1px solid #e0c3fc;
+  padding: 0.6rem;
+  word-break: break-word;
+}
+
 /* Mobile Styles */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .main-layout {
     flex-direction: column;
-    padding: 1rem;
+    padding: 1.2rem;
   }
-  
   .left-column, .dashboard-container {
     width: 100%;
     max-width: 100%;
   }
-
   h1 {
-    font-size: 1.2rem;
+    font-size: 1.18rem;
+  }
+  .sign-container,
+  .check-container,
+  .dashboard-container {
+    padding: 1.3rem 0.8rem;
   }
 }
+
+.trial-btn {
+  background: #1a1726;
+  color: #fff;
+  border: 2px solid transparent; /* <-- hier */
+  border-radius: 7px;              /* Weniger stark abgerundet */
+  padding: 0.7rem 1.7rem;          /* Weniger hoch und schmaler */
+  font-size: 1.15rem;              /* Kleinere Schrift */
+  font-weight: 700;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+  box-shadow: none;
+  outline: none;
+  display: inline-block;
+  letter-spacing: 0.01em;
+}
+
+.trial-btn:hover,
+.trial-btn:focus {
+  background: #ffffff;        /* weißer Hintergrund */
+  color: #000000;             /* schwarze Schrift */
+  border: 2px solid #000000;  /* schwarzer Rand */
+  transform: translateY(-2px) scale(1.03);
+}
+
+.center-content {
+  display: flex;
+  justify-content: center;
+  align-items: center; /* vertikal, falls gewünscht */
+  width: 100%;
+}
+
+
 </style>
