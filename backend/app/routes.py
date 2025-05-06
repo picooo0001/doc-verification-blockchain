@@ -1,7 +1,9 @@
-from flask import Blueprint, request, jsonify
+# backend/app/routes.py
+
+from flask import Blueprint, request, jsonify, abort
 from flask_login import login_required, current_user
-from .web3utils import w3, contract, default_sender_account, get_user_org_address
 from web3 import Web3
+from .web3utils import w3, get_notary_contract_for_org, get_user_org_address
 
 bp = Blueprint("notary", __name__)
 
@@ -16,29 +18,30 @@ def notarize():
         return jsonify({"error": "No documentId provided"}), 400
 
     data = file.read()
-    # 1) Erzeuge den raw-Hash (bytes32)
+    # 1) File-Hash
     doc_hash = w3.keccak(data)
-
-    # 2) ID-Hash (bytes32)
+    # 2) ID-Hash
     id_hash = w3.keccak(text=doc_id)
 
-    # 3) Original-Hash aus dem Contract holen – rohes bytes32
-    orig_bytes = contract.functions.originalHash(id_hash).call()
+    # 3) Contract-Instanz für die aktuelle Organisation
+    contract = get_notary_contract_for_org(current_user.organization)
 
-    # 4) Pre-Check: wenn orig_bytes nicht Null-Hash und nicht derselbe Hash → verboten
+    # 4) Pre-Check originalHash
+    orig_bytes = contract.functions.originalHash(id_hash).call()
     zero32 = b'\x00' * 32
     if orig_bytes != zero32 and orig_bytes != doc_hash:
         return jsonify({"error": "Dokument darf nicht geändert werden"}), 400
 
-    # 5) Key fürs Timestamp-Mapping bauen (wie im Contract)
+    # 5) Pre-Check timestamps
     key = w3.keccak(id_hash + doc_hash)
     if contract.functions.timestamps(key).call() != 0:
         return jsonify({"error": "Schon notariell hinterlegt"}), 400
 
-    # 6) Transaktion bauen und senden
-    nonce = w3.eth.get_transaction_count(default_sender_account)
+    # 6) Transaktion bauen und senden mit der Org-Wallet (chain_address)
+    sender = get_user_org_address(current_user)
+    nonce  = w3.eth.get_transaction_count(sender)
     tx = contract.functions.storeDocumentHash(id_hash, doc_hash).build_transaction({
-        "from": default_sender_account,
+        "from": sender,
         "nonce": nonce,
         "gas": 200_000,
         "gasPrice": w3.to_wei("1", "gwei"),
@@ -61,7 +64,9 @@ def verify():
     data = file.read()
     doc_hash = w3.keccak(data)
 
-    # Prüfe globalen Dateihash (neues Mapping fileTimestamps)
+    # Contract-Instanz laden
+    contract = get_notary_contract_for_org(current_user.organization)
+
     ts = contract.functions.fileTimestamps(doc_hash).call()
     if ts == 0:
         return jsonify({"verified": False}), 404
@@ -74,14 +79,11 @@ def list_documents():
     """
     Listet alle Dokumente auf, die zur Organisation des aktuellen Nutzers gehören.
     """
-    org_addr = get_user_org_address(current_user).lower()
+    contract = get_notary_contract_for_org(current_user.organization)
     events = contract.events.DocumentNotarized.create_filter(from_block=0).get_all_entries()
 
     docs = []
     for ev in events:
-        owner = contract.functions.getDocOrg(ev.args.idHash).call()
-        if owner.lower() != org_addr:
-            continue
         docs.append({
             "idHash":       ev.args.idHash.hex(),
             "documentHash": ev.args.documentHash.hex(),
@@ -97,22 +99,16 @@ def get_document(documentId):
     """
     Gibt Details zu einem einzelnen Dokument zurück, wenn es zur Organisation gehört.
     """
-    org_addr = get_user_org_address(current_user).lower()
     id_hash = w3.keccak(text=documentId)
+    contract = get_notary_contract_for_org(current_user.organization)
 
-    # Prüfe, ob die Org dieses Dokument hält
-    owner = contract.functions.getDocOrg(id_hash).call()
-    if owner.lower() != org_addr:
-        return jsonify({"error": "Nicht berechtigt"}), 403
+    if contract.functions.timestamps(id_hash).call() == 0:
+        return jsonify({"error": "Document not found"}), 404
 
     entries = contract.events.DocumentNotarized.create_filter(
         from_block=0,
         argument_filters={"idHash": id_hash}
     ).get_all_entries()
-
-    if not entries:
-        return jsonify({"error": "Document not found"}), 404
-
     ev = entries[0]
     return jsonify({
         "documentId":    documentId,
@@ -131,17 +127,13 @@ def stats():
       - totalNotarizations
       - latestNotarization { documentHash, timestamp }
     """
-    org_addr = get_user_org_address(current_user).lower()
+    contract = get_notary_contract_for_org(current_user.organization)
     events = contract.events.DocumentNotarized.create_filter(from_block=0).get_all_entries()
-    own = [
-        e for e in events
-        if contract.functions.getDocOrg(e.args.idHash).call().lower() == org_addr
-    ]
 
-    total = len(own)
+    total = len(events)
     latest = None
-    if own:
-        ev = max(own, key=lambda e: e.args.timestamp)
+    if total > 0:
+        ev = max(events, key=lambda e: e.args.timestamp)
         latest = {
             "documentHash": ev.args.documentHash.hex(),
             "timestamp":    ev.args.timestamp
@@ -156,30 +148,21 @@ def stats():
 @login_required
 def document_history(documentId):
     """
-    Liefert die komplette Historie der Notarisierungen für eine documentId:
-      - documentHash
-      - timestamp
-      - txHash
-      - blockNumber
+    Liefert die komplette Historie der Notarisierungen für eine documentId.
     """
-    # 1) Organisations-Check
-    org_addr = get_user_org_address(current_user).lower()
-    id_hash  = w3.keccak(text=documentId)
+    id_hash = w3.keccak(text=documentId)
+    contract = get_notary_contract_for_org(current_user.organization)
 
-    # 2) Prüfe, ob die Org dieses Dokument hält
-    owner = contract.functions.getDocOrg(id_hash).call()
-    if owner.lower() != org_addr:
-        return jsonify({"error": "Nicht berechtigt"}), 403
-
-    # 3) Alle DocumentNotarized-Events für diese ID abholen
-    events = contract.events.DocumentNotarized.create_filter(
+    entries = contract.events.DocumentNotarized.create_filter(
         from_block=0,
         argument_filters={"idHash": id_hash}
     ).get_all_entries()
 
-    # 4) Eine Liste von History-Einträgen zusammenstellen
+    if not entries:
+        return jsonify({"error": "Document not found"}), 404
+
     history = []
-    for ev in events:
+    for ev in entries:
         history.append({
             "documentHash": ev.args.documentHash.hex(),
             "timestamp":    ev.args.timestamp,
@@ -188,4 +171,3 @@ def document_history(documentId):
         })
 
     return jsonify(history), 200
-

@@ -1,67 +1,63 @@
+// test/notary.test.js
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 
-describe("Notary with org-based access control", function () {
-  let Notary, notary;
-  let chainOwner, orgA, adminA1, adminA2, outsider;
+describe("Notary – pro-Organisation-Instanz", function () {
+  let Notary, notaryA, notaryB;
+  let owner, orgA, adminA1, orgB, adminB1, outsider;
 
   beforeEach(async () => {
-    [chainOwner, orgA, adminA1, adminA2, outsider] = await ethers.getSigners();
+    [owner, orgA, adminA1, orgB, adminB1, outsider] = await ethers.getSigners();
     Notary = await ethers.getContractFactory("Notary");
-    notary = await Notary.connect(chainOwner).deploy();
-    await notary.waitForDeployment();
-
-    // Org A registrieren, Org-Wallet wird automatisch Admin seiner selbst
-    await notary.connect(chainOwner).registerOrg(orgA.address);
-    // Zwei weitere Admins hinzufügen
-    await notary.connect(orgA).addOrgAdmin(orgA.address, adminA1.address);
-    await notary.connect(orgA).addOrgAdmin(orgA.address, adminA2.address);
+    notaryA = await Notary.connect(owner).deploy(orgA.address);
+    await notaryA.waitForDeployment();
+    notaryB = await Notary.connect(owner).deploy(orgB.address);
+    await notaryB.waitForDeployment();
+    await notaryA.connect(orgA).addOrgAdmin(adminA1.address);
+    await notaryB.connect(orgB).addOrgAdmin(adminB1.address);
   });
 
-  it("allows any org admin to notarize under the org", async () => {
+  it("ermöglicht Org-Admins, Dokumente zu notarisieren", async () => {
     const idHash = ethers.keccak256(ethers.toUtf8Bytes("id1"));
     const docHash = ethers.keccak256(ethers.toUtf8Bytes("docA"));
-
-    // Erst-Notarisierung durch adminA1 → OK
     await expect(
-      notary.connect(adminA1).storeDocumentHash(idHash, docHash)
-    ).to.emit(notary, "DocumentNotarized");
+      notaryA.connect(adminA1).storeDocumentHash(idHash, docHash)
+    )
+      .to.emit(notaryA, "DocumentNotarized")
+      .withArgs(orgA.address, idHash, docHash, anyValue);
+  });
 
-    // Zweiter Versuch derselben Kombination → revert wegen Schon notariell hinterlegt
+  it("verhindert Outsider-Notarisierung", async () => {
+    const idHash = ethers.keccak256(ethers.toUtf8Bytes("id2"));
+    const docHash = ethers.keccak256(ethers.toUtf8Bytes("docB"));
     await expect(
-      notary.connect(adminA1).storeDocumentHash(idHash, docHash)
+      notaryA.connect(outsider).storeDocumentHash(idHash, docHash)
+    ).to.be.revertedWith("Nicht Org-Admin");
+  });
+
+  it("verhindert doppelte Notarisierung in derselben Instanz", async () => {
+    const idHash = ethers.keccak256(ethers.toUtf8Bytes("dup1"));
+    const docHash = ethers.keccak256(ethers.toUtf8Bytes("docDup"));
+    await notaryA.connect(adminA1).storeDocumentHash(idHash, docHash);
+    await expect(
+      notaryA.connect(adminA1).storeDocumentHash(idHash, docHash)
     ).to.be.revertedWith("Schon notariell hinterlegt");
   });
 
-  it("prevents outsider from notarizing for the org", async () => {
-    const idHash = ethers.keccak256(ethers.toUtf8Bytes("id2"));
-    const docHash = ethers.keccak256(ethers.toUtf8Bytes("docB"));
-
+  it("ermöglicht getrennte Notarisierung derselben ID in verschiedenen Instanzen", async () => {
+    const idHash = ethers.keccak256(ethers.toUtf8Bytes("shared2"));
+    const docA = ethers.keccak256(ethers.toUtf8Bytes("docA"));
+    const docB = ethers.keccak256(ethers.toUtf8Bytes("docB"));
     await expect(
-      notary.connect(outsider).storeDocumentHash(idHash, docHash)
-    ).to.be.revertedWith("Nicht Org-Admin");
-  });
-
-  it("prevents admins of other orgs from accessing", async () => {
-    // Org B registrieren (outsider wird Org-Wallet und Admin)
-    await notary.connect(chainOwner).registerOrg(outsider.address);
-
-    const idHashA = ethers.keccak256(ethers.toUtf8Bytes("sharedId"));
-    const docHashA = ethers.keccak256(ethers.toUtf8Bytes("docA"));
-    // Org A Admin notariert
-    await notary.connect(adminA1).storeDocumentHash(idHashA, docHashA);
-
-    // Org B Admin (outsider) versucht für dieselbe ID → revert
+      notaryA.connect(adminA1).storeDocumentHash(idHash, docA)
+    )
+      .to.emit(notaryA, "DocumentNotarized")
+      .withArgs(orgA.address, idHash, docA, anyValue);
     await expect(
-      notary.connect(outsider).storeDocumentHash(idHashA, docHashA)
-    ).to.be.revertedWith("Nicht Org-Admin");
-  });
-
-  it("correctly reports docOrg mapping", async () => {
-    const idHash = ethers.keccak256(ethers.toUtf8Bytes("id3"));
-    const docHash = ethers.keccak256(ethers.toUtf8Bytes("docC"));
-
-    await notary.connect(adminA2).storeDocumentHash(idHash, docHash);
-    expect(await notary.getDocOrg(idHash)).to.equal(orgA.address);
+      notaryB.connect(adminB1).storeDocumentHash(idHash, docB)
+    )
+      .to.emit(notaryB, "DocumentNotarized")
+      .withArgs(orgB.address, idHash, docB, anyValue);
   });
 });

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
-from .models import User
+from .models import User, Organization
 from . import db
 import pyotp
 import qrcode
@@ -92,10 +92,13 @@ def setup_2fa():
 @bp.route("/user/profile", methods=["GET"])
 @login_required
 def user_profile():
+    wallet = current_user.wallet_address
     return jsonify({
         "email": current_user.email,
         "organization": current_user.organization.name,
-        "2faEnabled": bool(current_user.otp_secret)
+        "2faEnabled": bool(current_user.otp_secret),
+        "walletAddress": wallet if wallet else None,
+        "hasWallet": bool(wallet)
     }), 200
 
 @bp.route("/user/2fa", methods=["POST"])
@@ -205,3 +208,11 @@ def login_wallet():
     db.session.commit()
     login_user(user)
     return jsonify({"message": "Login erfolgreich"}), 200
+
+@bp.route("/org/allowed-addresses", methods=["GET"])
+@login_required
+def get_allowed_addresses():
+    # Liefert alle wallet addresses der Nutzer der eigenen Organisation
+    org = Organization.query.get(current_user.organization_id)
+    addresses = [u.wallet_address for u in org.users if u.wallet_address]
+    return jsonify({"allowedAddresses": addresses}), 200

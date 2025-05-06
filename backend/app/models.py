@@ -6,7 +6,8 @@ class Organization(db.Model):
     __tablename__ = "organizations"
     id            = db.Column(db.Integer, primary_key=True)
     name          = db.Column(db.String(128), unique=True, nullable=False)
-    chain_address = db.Column(db.String(42), unique=True, nullable=False)  # On‐chain Org-Wallet
+    chain_address = db.Column(db.String(42), unique=True, nullable=False)
+    contract_address = db.Column(db.String(42), unique=True, nullable=True)
     users         = db.relationship("User", backref="organization", lazy=True)
 
 class User(db.Model, UserMixin):
