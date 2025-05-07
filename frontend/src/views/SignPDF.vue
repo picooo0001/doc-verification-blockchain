@@ -95,12 +95,15 @@ hinterlegt ist.</p>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useToast } from 'vue-toastification'
 
+const toast = useToast()
 const stats = ref(null)
 const pdfFiles = ref([])
 const pdfUrls = ref([])
 const checkResult = ref(null)
 const checkPdfFile = ref(null)
+const currentDocumentId = ref(null)
 let intervalId = null
 const documents = ref([])
 
@@ -191,70 +194,129 @@ function handleFileUpload(event) {
 }
 
 // Funktion zum Senden der Datei an das Backend zur Signierung
+
 async function submitToBackend() {
-  const file = pdfFiles.value[0]
-  const documentId = file.name   // oder eine UUID etc.
-
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('documentId', documentId)
-
-  const res = await fetch('http://localhost:5001/api/notarize', {
-    method: 'POST',
-    body: formData,
-    credentials: 'include'
-  })
-
-  const result = await res.json()
-
-  if (res.ok) {
-    alert('Erfolgreich signiert')
-    await loadStats()
-    await loadDocuments()
-  } else {
-    alert(result.error)
-  }
-}
-
-// Funktion zum Prüfen von PDFs
-function checkPdf(event) {
-  checkPdfFile.value = event.target.files[0]
-}
-
-// Funktion zur Verifikation des PDFs
-async function verifyPdf() {
-  if (!checkPdfFile.value) {
-    alert('Bitte lade eine PDF-Datei zum Prüfen hoch.')
+  if (pdfFiles.value.length === 0) {
+    toast.warning('Bitte lade eine PDF-Datei zum Signieren hoch.')
     return
   }
 
-  const formData = new FormData()
-  formData.append('file', checkPdfFile.value)
+  const file = pdfFiles.value[0]
+  const documentId = file.name
+  currentDocumentId.value = documentId
+
+  // Schritt 1: Prüfung auf vorhandene Signatur via /api/verify
+  const formDataCheck = new FormData()
+  formDataCheck.append('file', file)
+
+  try {
+    const verifyRes = await fetch('http://localhost:5001/api/verify', {
+      method: 'POST',
+      body: formDataCheck,
+      credentials: 'include'
+    })
+
+    let verifyData = {}
+    try {
+      verifyData = await verifyRes.json()
+    } catch (e) {
+      toast.error('Fehler beim Lesen der Prüfantwort.')
+      return
+    }
+
+    if (verifyRes.ok && verifyData.verified) {
+      const date = new Date(verifyData.timestamp * 1000).toLocaleString()
+      toast.warning(`Dieses Dokument wurde bereits am ${date} signiert.`)
+      return
+    }
+
+    // Schritt 2: Datei hochladen & signieren
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('documentId', documentId)
+
+    const res = await fetch('http://localhost:5001/api/notarize', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+    })
+
+    if (!res.ok) {
+      let result = {}
+      try {
+        result = await res.json()
+      } catch (e) {
+        toast.error('Serverfehler: Antwort konnte nicht gelesen werden.')
+        return
+      }
+
+      if (result.error === 'Document already signed') {
+        toast.warning('Das Dokument wurde bereits signiert.')
+      } else {
+        toast.error(result.error || 'Unbekannter Fehler beim Signieren.')
+      }
+      return
+    }
+
+    const result = await res.json()
+    toast.success('Dokument erfolgreich signiert!')
+    await loadHistory(currentDocumentId.value)
+
+  } catch (err) {
+    console.error('Fehler beim Signieren:', err)
+    toast.error('Netzwerkfehler oder Server nicht erreichbar.')
+  }
+}
+function checkPdf(event) {
+  const file = event.target.files[0];
+  if (file && file.type === 'application/pdf') {
+    checkPdfFile.value = file;  // Datei korrekt zuweisen
+  } else {
+    toast.warning('Bitte lade eine gültige PDF-Datei hoch.');
+  }
+}
+async function verifyPdf() {
+  if (!checkPdfFile.value) {
+    toast.warning('Bitte lade eine PDF-Datei zum Prüfen hoch.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', checkPdfFile.value);
 
   try {
     const response = await fetch('http://localhost:5001/api/verify', {
       method: 'POST',
       body: formData,
       credentials: 'include'
-    })
+    });
 
-    const result = await response.json()
+    let result = {};
+    try {
+      result = await response.json();
+    } catch (e) {
+      toast.error('Serverantwort konnte nicht gelesen werden.');
+      return;
+    }
 
     if (response.ok && result.verified) {
-      const date = new Date(result.timestamp * 1000).toLocaleString()
-      checkResult.value = `✅ Dokument wurde am ${date} verifiziert.`
+      const date = new Date(result.timestamp * 1000).toLocaleString();
+      toast.success(`Dokument wurde am ${date} verifiziert.`);
     } else if (response.status === 404) {
-      checkResult.value = '❌ Dokument nicht in der Blockchain gefunden.'
+      toast.warning('Dokument nicht in der Blockchain gefunden.');
     } else if (response.status === 403) {
-      checkResult.value = '⛔ Nicht berechtigt, dieses Dokument zu prüfen.'
+      toast.error('Nicht berechtigt, dieses Dokument zu prüfen.');
     } else {
-      checkResult.value = '❌ Unbekannter Fehler bei der Prüfung.'
+      toast.error(result.error || 'Unbekannter Fehler bei der Prüfung.');
     }
+
   } catch (err) {
-    console.error('Fehler beim Prüfen:', err)
-    checkResult.value = '🌐 Netzwerkfehler oder Server nicht erreichbar.'
+    console.error('Netzwerkfehler:', err);
+    toast.error('Netzwerkfehler oder Server nicht erreichbar.');
   }
 }
+
+
 </script>
 
 <style>
@@ -263,24 +325,29 @@ async function verifyPdf() {
   gap: 2.5rem;
   padding: 3rem 2rem 2rem 2rem;
   min-height: 100vh;
-  background: linear-gradient(90deg, #fff 0%, #e7d6fb 35%, #cdb6ec 70%, #eab6d8 
-100%);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
- Helvetica, Arial, sans-serif;
-}
-.sign-container h1,
-.check-container h1,
-.dashboard-container h1 {
-  font-size: 2.2rem;
-  color: #1a1726;
-  font-weight: 800;
+  background: linear-gradient(90deg, #fff 0%, #e7d6fb 35%, #cdb6ec 70%, #eab6d8 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  justify-content: center;  /* Zentriert die Container */
+  height: 100%; /* Stellt sicher, dass die Layout-Container volle Höhe einnehmen */
 }
 
-.sign-container,
-.check-container,
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 40%; /* Linke Spalte */
+  max-height: 100%; /* Maximale Höhe für die linke Spalte */
+}
+
 .dashboard-container {
+  width: 50%; /* Breite des rechten Containers */
+  max-height: 100%; /* Maximale Höhe, gleich wie die linke Spalte */
+  overflow-y: auto; /* Scrollen erlauben, falls der Inhalt zu groß ist */
+}
+
+.sign-container, .check-container, .dashboard-container {
   background: linear-gradient(180deg, #fff 0%, #f6eefd 60%, #f2e4f4 100%);
-  border-radius: 6px; /* wie der Button im Screenshot */
+  border-radius: 6px;
   box-shadow: 0 8px 32px rgba(31, 35, 40, 0.12);
   padding: 2.5rem 2rem 2rem 2rem;
   margin-bottom: 2rem;
@@ -289,14 +356,16 @@ async function verifyPdf() {
   gap: 1.3rem;
   backdrop-filter: blur(6px);
   transition: box-shadow 0.18s;
+  width: 100%; /* Container nimmt volle Breite ein */
 }
 
 .sign-container:hover,
 .check-container:hover,
 .dashboard-container:hover {
-  transform: translateY(-5px); /* leichtes Hüpfen nach oben */
+  transform: translateY(-5px); 
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
 .dashboard-container {
   width: 50%;
 }
