@@ -58,8 +58,6 @@ hinterlegt ist.</p>
       <p>Statistiken über signierte und überprüfte Dokumente erscheinen hier.</p>
       
       <div v-if="stats && !stats.error">
-        <p><strong>🏛️ Org-Chain-Adresse:</strong> {{ stats.orgChainAddress }}</p>
-        <p><strong>🔗 Contract-Adresse:</strong> {{ stats.contractAddress }}</p>
         <p><strong>🧾 Gesamtzahl der Notarisierungen:</strong> {{ stats.total }}</p>
         <p><strong>📅 Erste Notarisierung:</strong> {{ stats.firstDate }}</p>
         <p><strong>🧬 Hash der ersten Notarisierung:</strong> {{ stats.firstHash }}</p>
@@ -97,9 +95,7 @@ hinterlegt ist.</p>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useToast } from 'vue-toastification'
 
-const toast = useToast()
 const stats = ref(null)
 const pdfFiles = ref([])
 const pdfUrls = ref([])
@@ -120,8 +116,6 @@ async function loadStats() {
 
     const data = await response.json()
 
-    const orgChainAddress = data.orgChainAddress || '–'
-    const contractAddress = data.contractAddress || '–'
     const first = data.firstNotarization
     const latest = data.latestNotarization
     let firstDate = '—'
@@ -140,8 +134,6 @@ async function loadStats() {
     }
 
     stats.value = {
-      orgChainAddress,
-      contractAddress,
       total: data.totalNotarizations || 0,
       firstDate,
       firstHash,
@@ -191,7 +183,7 @@ onUnmounted(() => {
 function handleFileUpload(event) {
   const files = Array.from(event.target.files).filter(file => file.type === 'application/pdf')
   if (files.length === 0) {
-    toast.warning('Bitte nur gültige PDF-Dateien auswählen.')
+    alert('Bitte nur gültige PDF-Dateien auswählen.')
     return
   }
   pdfFiles.value = files
@@ -200,12 +192,6 @@ function handleFileUpload(event) {
 
 // Funktion zum Senden der Datei an das Backend zur Signierung
 async function submitToBackend() {
-  // Überprüfen, ob eine Datei ausgewählt wurde
-  if (pdfFiles.value.length === 0) {
-    toast.warning('Bitte lade eine PDF-Datei zum Signieren hoch.')
-    return
-  }
-
   const file = pdfFiles.value[0]
   const documentId = file.name   // oder eine UUID etc.
 
@@ -213,43 +199,32 @@ async function submitToBackend() {
   formData.append('file', file)
   formData.append('documentId', documentId)
 
-  try {
-    const res = await fetch('http://localhost:5001/api/notarize', {
-      method: 'POST',
-      body: formData,
-      credentials: 'include'
-    })
+  const res = await fetch('http://localhost:5001/api/notarize', {
+    method: 'POST',
+    body: formData,
+    credentials: 'include'
+  })
 
-    // Falls die Antwort des Servers nicht erfolgreich ist, den Fehler behandeln
-    if (!res.ok) {
-      const result = await res.json()
-      // Wenn eine spezifische Fehlermeldung zurückgegeben wird
-      if (result.error) {
-        toast.error(result.error || 'Fehler beim Signieren.')
-      } else {
-        toast.error('Unbekannter Fehler beim Signieren.')
-      }
-      return
-    }
+  const result = await res.json()
 
   if (res.ok) {
-    toast.success('Dokument erfolgreich signiert!')
+    alert('Erfolgreich signiert')
     await loadStats()
     await loadDocuments()
   } else {
-    toast.error(result.error || 'Fehler beim Signieren.')
+    alert(result.error)
   }
 }
 
-  // Funktion zum Prüfen von PDFs
-  function checkPdf(event) {
-    checkPdfFile.value = event.target.files[0]
-  }
+// Funktion zum Prüfen von PDFs
+function checkPdf(event) {
+  checkPdfFile.value = event.target.files[0]
+}
 
 // Funktion zur Verifikation des PDFs
 async function verifyPdf() {
   if (!checkPdfFile.value) {
-    toast.warning('Bitte lade eine PDF-Datei zum Prüfen hoch.')
+    alert('Bitte lade eine PDF-Datei zum Prüfen hoch.')
     return
   }
 
@@ -263,31 +238,23 @@ async function verifyPdf() {
       credentials: 'include'
     })
 
-    let result = {}
-    try {
-      result = await response.json()
-    } catch (e) {
-      // JSON konnte nicht geparst werden
-      toast.error('Serverantwort konnte nicht gelesen werden.')
-      return
-    }
+    const result = await response.json()
 
     if (response.ok && result.verified) {
       const date = new Date(result.timestamp * 1000).toLocaleString()
-      toast.success(`Dokument wurde am ${date} verifiziert.`)
+      checkResult.value = `✅ Dokument wurde am ${date} verifiziert.`
     } else if (response.status === 404) {
-      toast.warning('Dokument nicht in der Blockchain gefunden.')
+      checkResult.value = '❌ Dokument nicht in der Blockchain gefunden.'
     } else if (response.status === 403) {
-      toast.error('Nicht berechtigt, dieses Dokument zu prüfen.')
+      checkResult.value = '⛔ Nicht berechtigt, dieses Dokument zu prüfen.'
     } else {
-      toast.error(result.error || 'Unbekannter Fehler bei der Prüfung.')
+      checkResult.value = '❌ Unbekannter Fehler bei der Prüfung.'
     }
   } catch (err) {
     console.error('Fehler beim Prüfen:', err)
-    toast.error('Netzwerkfehler oder Server nicht erreichbar.')
+    checkResult.value = '🌐 Netzwerkfehler oder Server nicht erreichbar.'
   }
 }
-
 </script>
 
 <style>
