@@ -18,7 +18,7 @@ class Config:
     # Datenbank URL
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        "postgresql://myuser:mypass@localhost:5432/mydb"
+        "postgresql://postgres:qE9b^M;42;Ln@db.fffabyazqvvwdaimdcmk.supabase.co:5432/postgres"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
