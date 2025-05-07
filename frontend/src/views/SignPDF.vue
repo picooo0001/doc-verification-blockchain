@@ -5,10 +5,10 @@
       <!-- PDF Signieren -->
       <div class="sign-container">
         <div class="center-content">
-
-        <h1>PDF Signieren</h1>
-      </div>
-        <p class="subtitle">Lade ein oder mehrere PDF-Dateien hoch, um sie mit der Blockchain zu verknüpfen.</p>
+          <h1>PDF Signieren</h1>
+        </div>
+        <p class="subtitle">Lade ein oder mehrere PDF-Dateien hoch, um sie mit 
+der Blockchain zu verknüpfen.</p>
       
         <div class="p-4">
           <input type="file" accept="application/pdf" multiple @change="handleFileUpload" />
@@ -21,25 +21,26 @@
 
         <div class="action-container">
           <div class="center-content">
-          <button @click="submitToBackend" class="trial-btn">Signieren</button>
+            <button @click="submitToBackend" class="trial-btn">Signieren</button>
+          </div>
         </div>
-      </div>
       </div>
 
       <!-- PDF Prüfen -->
       <div class="check-container">
         <div class="center-content">
-        <h1>PDF Prüfen</h1>
-      </div>
-        <p class="subtitle">Prüfe, ob eine PDF bereits in der Blockchain hinterlegt ist.</p>
+          <h1>PDF Prüfen</h1>
+        </div>
+        <p class="subtitle">Prüfe, ob eine PDF bereits in der Blockchain 
+hinterlegt ist.</p>
 
         <div class="p-4">
           <input type="file" accept="application/pdf" @change="checkPdf" />
 
           <div class="action-container">
             <div class="center-content">
-            <button class="trial-btn" @click="verifyPdf">Prüfen</button>
-          </div>
+              <button class="trial-btn" @click="verifyPdf">Prüfen</button>
+            </div>
           </div>
 
           <div v-if="checkResult">
@@ -52,49 +53,50 @@
     <!-- Dashboard -->
     <div class="dashboard-container">
       <div class="center-content">
-
-      <h1>Dashboard</h1>
-    </div>
+        <h1>📊 Dashboard</h1>
+      </div>
       <p>Statistiken über signierte und überprüfte Dokumente erscheinen hier.</p>
       
       <div v-if="stats && !stats.error">
-        <p><strong>Gesamtzahl der Signaturen:</strong> {{ stats.total }}</p>
-        <p><strong>Letzte Signatur:</strong> {{ stats.latestDate }}</p>
-        <p><strong>Hash:</strong> {{ stats.latestHash }}</p>
+        <p><strong>🏛️ Org-Chain-Adresse:</strong> {{ stats.orgChainAddress }}</p>
+        <p><strong>🔗 Contract-Adresse:</strong> {{ stats.contractAddress }}</p>
+        <p><strong>🧾 Gesamtzahl der Notarisierungen:</strong> {{ stats.total }}</p>
+        <p><strong>📅 Erste Notarisierung:</strong> {{ stats.firstDate }}</p>
+        <p><strong>🧬 Hash der ersten Notarisierung:</strong> {{ stats.firstHash }}</p>
+        <p><strong>📅 Letzte Notarisierung:</strong> {{ stats.latestDate }}</p>
+        <p><strong>🧬 Hash der letzten Notarisierung:</strong> {{ stats.latestHash }}</p>
       </div>
 
-      <!-- Notarisierungshistorie -->
-      <div v-if="history && history.length > 0">
+      <div v-if="documents && documents.length > 0">
         <h2>🕓 Notarisierungshistorie</h2>
-        <table style="width: 100%; border-collapse: collapse;">
+        <table>
           <thead>
-            <tr style="background-color: #f0f0f0;">
-              <th style="text-align: left; padding: 0.5rem;">Block</th>
-              <th style="text-align: left; padding: 0.5rem;">Zeitpunkt</th>
-              <th style="text-align: left; padding: 0.5rem;">Tx Hash</th>
-              <th style="text-align: left; padding: 0.5rem;">Dokumentenhash</th>
+            <tr>
+              <th>Block</th>
+              <th>Zeitpunkt</th>
+              <th>Tx Hash</th>
+              <th>Dokumentenhash</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(entry, index) in history" :key="index" style="border-top: 1px solid #ddd;">
-              <td style="padding: 0.5rem;">{{ entry.blockNumber }}</td>
-              <td style="padding: 0.5rem;">{{ formatTimestamp(entry.timestamp) }}</td>
-              <td style="padding: 0.5rem; overflow-wrap: break-word;">{{ entry.txHash }}</td>
-              <td style="padding: 0.5rem; overflow-wrap: break-word;">{{ entry.documentHash }}</td>
+            <tr v-for="(doc, index) in documents" :key="doc.txHash">
+              <td>{{ doc.blockNumber }}</td>
+              <td>{{ formatTimestamp(doc.timestamp) }}</td>
+              <td>{{ doc.txHash }}</td>
+              <td>{{ doc.documentHash }}</td>
             </tr>
           </tbody>
         </table>
       </div>
       <div v-else>
-        <p>Keine Historie gefunden.</p>
+        <p class="dashboard-placeholder">Keine Notarisierungen gefunden.</p>
       </div>
     </div>
   </div>
 </template>
 
-
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
@@ -103,8 +105,8 @@ const pdfFiles = ref([])
 const pdfUrls = ref([])
 const checkResult = ref(null)
 const checkPdfFile = ref(null)
-const documentId = ref(null)  // Variable für die Dokument-ID, die beim Signieren zurückgegeben wird
-const history = ref([])  // Variable für die Notarisierungshistorie
+let intervalId = null
+const documents = ref([])
 
 // Funktion zum Laden der Statistiken
 async function loadStats() {
@@ -118,9 +120,19 @@ async function loadStats() {
 
     const data = await response.json()
 
+    const orgChainAddress = data.orgChainAddress || '–'
+    const contractAddress = data.contractAddress || '–'
+    const first = data.firstNotarization
     const latest = data.latestNotarization
+    let firstDate = '—'
+    let firstHash = '—'
     let latestDate = '—'
     let latestHash = '—'
+
+    if (first && first.timestamp) {
+      firstDate = new Date(first.timestamp * 1000).toLocaleString()
+      firstHash = first.documentHash
+    }
 
     if (latest && latest.timestamp) {
       latestDate = new Date(latest.timestamp * 1000).toLocaleString()
@@ -128,31 +140,32 @@ async function loadStats() {
     }
 
     stats.value = {
+      orgChainAddress,
+      contractAddress,
       total: data.totalNotarizations || 0,
+      firstDate,
+      firstHash,
       latestDate,
-      latestHash,
-      timestamps: data.timestamps || []
+      latestHash
     }
-
   } catch (err) {
     console.error('Dashboard-Fehler:', err)
     stats.value = { error: 'Fehler beim Laden der Statistiken.' }
   }
 }
 
-// Funktion zum Laden der Notarisierungshistorie für ein Dokument
-// Funktion zum Laden der Notarisierungshistorie für ein Dokument
-async function loadHistory(documentId) {
+// Funktion zum Laden der Dokument-Transaktionen
+async function loadDocuments() {
   try {
-    const res = await fetch(`http://localhost:5001/api/documents/${documentId}/history`, {
+    const response = await fetch('http://localhost:5001/api/documents', {
+      method: 'GET',
       credentials: 'include'
     })
-    if (!res.ok) throw new Error('Fehler beim Laden der Notarisierungshistorie')
-    const data = await res.json()
-    console.log('History:', data)
-    history.value = data // ✅ Hier fehlte die Zuweisung
+    if (!response.ok) throw new Error('Fehler beim Laden der Dokumentdaten')
+    const data = await response.json()
+    documents.value = data.documents.sort((a, b) => b.timestamp - a.timestamp)
   } catch (err) {
-    console.error('Fehler beim Laden der Historie:', err)
+    console.error('Fehler beim Laden der Dokumentdaten:', err)
   }
 }
 
@@ -162,25 +175,30 @@ function formatTimestamp(ts) {
   return date.toLocaleString()
 }
 
-
-
 onMounted(() => {
   loadStats()
+  loadDocuments()
+  intervalId = setInterval(() => {
+    loadStats()
+    loadDocuments()
+  }, 15000)
+})
+onUnmounted(() => {
+  clearInterval(intervalId)
 })
 
 // Funktion zum Hochladen von PDF-Dateien
 function handleFileUpload(event) {
   const files = Array.from(event.target.files).filter(file => file.type === 'application/pdf')
   if (files.length === 0) {
-  toast.warning('Bitte nur gültige PDF-Dateien auswählen.')
-  return
-}
+    toast.warning('Bitte nur gültige PDF-Dateien auswählen.')
+    return
+  }
   pdfFiles.value = files
   pdfUrls.value = files.map(file => URL.createObjectURL(file))
 }
 
 // Funktion zum Senden der Datei an das Backend zur Signierung
-const currentDocumentId = ref(null)
 async function submitToBackend() {
   // Überprüfen, ob eine Datei ausgewählt wurde
   if (pdfFiles.value.length === 0) {
@@ -190,7 +208,6 @@ async function submitToBackend() {
 
   const file = pdfFiles.value[0]
   const documentId = file.name   // oder eine UUID etc.
-  currentDocumentId.value = documentId
 
   const formData = new FormData()
   formData.append('file', file)
@@ -215,26 +232,19 @@ async function submitToBackend() {
       return
     }
 
-    const result = await res.json()
-
-    // Wenn das Dokument erfolgreich signiert wurde
-    if (res.ok) {
-      toast.success('Dokument erfolgreich signiert!')
-      await loadHistory(currentDocumentId.value)
-    }
-  } catch (error) {
-    // Falls ein Fehler beim Netzwerkaufbau oder Serveraufruf auftritt
-    toast.error('Netzwerkfehler oder Server nicht erreichbar.')
+  if (res.ok) {
+    toast.success('Dokument erfolgreich signiert!')
+    await loadStats()
+    await loadDocuments()
+  } else {
+    toast.error(result.error || 'Fehler beim Signieren.')
   }
 }
 
-
-
-
-// Funktion zum Prüfen von PDFs
-function checkPdf(event) {
-  checkPdfFile.value = event.target.files[0]
-}
+  // Funktion zum Prüfen von PDFs
+  function checkPdf(event) {
+    checkPdfFile.value = event.target.files[0]
+  }
 
 // Funktion zur Verifikation des PDFs
 async function verifyPdf() {
@@ -272,9 +282,8 @@ async function verifyPdf() {
     } else {
       toast.error(result.error || 'Unbekannter Fehler bei der Prüfung.')
     }
-
   } catch (err) {
-    console.error('Netzwerkfehler:', err)
+    console.error('Fehler beim Prüfen:', err)
     toast.error('Netzwerkfehler oder Server nicht erreichbar.')
   }
 }
@@ -287,8 +296,10 @@ async function verifyPdf() {
   gap: 2.5rem;
   padding: 3rem 2rem 2rem 2rem;
   min-height: 100vh;
-  background: linear-gradient(45deg, #ffffff 0%, #ffffff 70%, #e7d6fb 80%, #cdb6ec 90%, #eab6d8 100%);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(90deg, #fff 0%, #e7d6fb 35%, #cdb6ec 70%, #eab6d8 
+100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+ Helvetica, Arial, sans-serif;
 }
 .sign-container h1,
 .check-container h1,
@@ -296,15 +307,6 @@ async function verifyPdf() {
   font-size: 2.2rem;
   color: #1a1726;
   font-weight: 800;
-}
-
-
-
-.left-column {
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
-  width: 50%;
 }
 
 .sign-container,
@@ -436,6 +438,7 @@ th {
   font-weight: 700;
   padding: 0.6rem;
   border-bottom: 2px solid #e0c3fc;
+  text-align: left;
 }
 td {
   background: none;
@@ -443,6 +446,7 @@ td {
   border-top: 1px solid #e0c3fc;
   padding: 0.6rem;
   word-break: break-word;
+  text-align: left;
 }
 
 /* Mobile Styles */
@@ -473,7 +477,8 @@ td {
   padding: 0.7rem 1.7rem;          /* Weniger hoch und schmaler */
   font-size: 1.15rem;              /* Kleinere Schrift */
   font-weight: 700;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+"Helvetica Neue", Arial, sans-serif;
   cursor: pointer;
   transition: background 0.18s, transform 0.18s;
   box-shadow: none;
@@ -496,6 +501,4 @@ td {
   align-items: center; /* vertikal, falls gewünscht */
   width: 100%;
 }
-
-
 </style>
