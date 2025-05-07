@@ -26,7 +26,7 @@
             </div>
           </transition>
         </div>
-        <RouterLink v-else to="/login" class="login-btn">Sign in</RouterLink>
+        <RouterLink v-else to="/login" class="trial-btn">Sign in</RouterLink>
       </div>
 
       <button
@@ -340,5 +340,32 @@ body {
 .dropdown-item:focus {
   color: #111 !important;
   background: #f5f5fa;
+}
+
+
+.trial-btn {
+  background: #1a1726;
+  text-decoration: none;
+  color: #fff;
+  border: 2px solid transparent; /* <-- hier */
+  border-radius: 7px;              /* Weniger stark abgerundet */
+  padding: 0.7rem 1.7rem;          /* Weniger hoch und schmaler */
+  font-size: 1.15rem;              /* Kleinere Schrift */
+  font-weight: 700;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+  box-shadow: none;
+  outline: none;
+  display: inline-block;
+  letter-spacing: 0.01em;
+}
+
+.trial-btn:hover,
+.trial-btn:focus {
+  background: #ffffff;        /* weißer Hintergrund */
+  color: #000000;             /* schwarze Schrift */
+  border: 2px solid #000000;  /* schwarzer Rand */
+  transform: translateY(-2px) scale(1.03);
 }
 </style>

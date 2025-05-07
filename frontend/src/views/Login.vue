@@ -39,12 +39,16 @@
 </template>
 
 <script setup>
+import { useToast } from 'vue-toastification'
+
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import WalletLogin from '@/components/WalletLogin.vue'
 
 // Reaktive Variablen
+
+const toast = useToast()
 const email = ref('')
 const password = ref('')
 const otp = ref('')  // Variable für den 2FA-Code
@@ -54,74 +58,72 @@ const router = useRouter()
 // Login-Funktion
 async function login() {
   if (!email.value || !password.value) {
-    alert('Bitte fülle alle Felder aus.')
+    toast.error('Bitte fülle alle Felder aus.')
     return
   }
 
-  const loginData = {
-    email: email.value,
-    password: password.value,
-  }
+  const loginData = { email: email.value, password: password.value }
 
-  // Wenn 2FA erforderlich ist, müssen wir den OTP hinzufügen
   if (is2FARequired.value) {
     if (!otp.value) {
-      alert("Bitte gib deinen 2FA-Code ein.")
+      toast.warning("Bitte gib deinen 2FA-Code ein.")
       return
     }
-    loginData.otp = otp.value  // OTP zur Login-Daten hinzufügen
+    loginData.otp = otp.value
   }
 
   try {
     const response = await axios.post('http://localhost:5001/login', loginData, {
-      withCredentials: true,  // ermöglicht das Senden von Cookies (wie Session-IDs)
+      withCredentials: true,
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json',  // Achte auf den richtigen Content-Type
+        'Content-Type': 'application/json',
       }
     })
 
-    console.log(response.data.message)
-    alert('Login erfolgreich.')
-    localStorage.setItem('isLoggedIn', 'true')  // Loginstatus speichern
-    router.push('/sign-pdf')  // Weiterleitung zur nächsten Seite
+    toast.success('Login erfolgreich.')
+    localStorage.setItem('isLoggedIn', 'true')
+    router.push('/sign-pdf')
+
   } catch (error) {
     const err = error.response?.data?.error
 
     if (err === '2FA erforderlich') {
-      // Falls 2FA erforderlich ist, zeigen wir das OTP-Eingabefeld
       is2FARequired.value = true
-      alert('Bitte gib deinen 2FA-Code ein.')
+      toast.info('Bitte gib deinen 2FA-Code ein.')
     } else if (err === 'Ungültiges OTP') {
-      alert('Der eingegebene 2FA-Code ist falsch.')
+      toast.error('Der eingegebene 2FA-Code ist falsch.')
     } else if (err === 'Ungültige E-Mail oder Passwort') {
-      alert('Überprüfe deine E-Mail und Passwort.')
+      toast.error('Überprüfe deine E-Mail und dein Passwort.')
     } else {
-      alert('Login fehlgeschlagen: ' + (err || 'Unbekannter Fehler'))
+      toast.error('Login fehlgeschlagen: ' + (err || 'Unbekannter Fehler'))
     }
   }
 }
+
 </script>
 
 <style scoped>
 .main-layout {
   display: flex;
-  gap: 2.5rem;
-  padding: 3rem 2rem 2rem 2rem;
-  min-height: 100vh;
+  align-items: center;       /* Vertikale Zentrierung */
+  justify-content: center;   /* Horizontale Zentrierung */
+  min-height: 100vh;         /* Ganzer Bildschirm */
+  padding: 2rem;
   background: linear-gradient(45deg, #ffffff 0%, #ffffff 60%, #e7d6fb 75%, #cdb6ec 90%, #eab6d8 100%);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
-  .login-container {
-    max-width: 400px;
-    padding: 2.5rem 2rem 2rem 2rem;
+.login-container {
+  max-width: 400px;
+  border-radius: 6px; /* ← NUR dieser Eintrag bleibt */
+  box-shadow: 0 8px 32px rgba(31, 35, 40, 0.12);
+  padding: 2.5rem 2rem 2rem 2rem;
   margin-bottom: 2rem;
-    background: linear-gradient(180deg, #fff 0%, #f6eefd 60%, #f2e4f4 100%);    border-radius: 16px;
-    color: black;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    text-align: center;
-    font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  }
+  background: linear-gradient(180deg, #fff 0%, #f6eefd 60%, #f2e4f4 100%);
+  color: black;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
 
   h1 {
     font-size: 2rem;

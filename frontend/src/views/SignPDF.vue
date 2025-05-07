@@ -53,14 +53,14 @@
     <div class="dashboard-container">
       <div class="center-content">
 
-      <h1>📊 Dashboard</h1>
+      <h1>Dashboard</h1>
     </div>
       <p>Statistiken über signierte und überprüfte Dokumente erscheinen hier.</p>
       
       <div v-if="stats && !stats.error">
-        <p><strong>🧾 Gesamtzahl der Signaturen:</strong> {{ stats.total }}</p>
-        <p><strong>📅 Letzte Signatur:</strong> {{ stats.latestDate }}</p>
-        <p><strong>🧬 Hash:</strong> {{ stats.latestHash }}</p>
+        <p><strong>Gesamtzahl der Signaturen:</strong> {{ stats.total }}</p>
+        <p><strong>Letzte Signatur:</strong> {{ stats.latestDate }}</p>
+        <p><strong>Hash:</strong> {{ stats.latestHash }}</p>
       </div>
 
       <!-- Notarisierungshistorie -->
@@ -287,7 +287,7 @@ async function verifyPdf() {
   gap: 2.5rem;
   padding: 3rem 2rem 2rem 2rem;
   min-height: 100vh;
-  background: linear-gradient(45deg, #ffffff 0%, #ffffff 60%, #e7d6fb 75%, #cdb6ec 90%, #eab6d8 100%);
+  background: linear-gradient(45deg, #ffffff 0%, #ffffff 70%, #e7d6fb 80%, #cdb6ec 90%, #eab6d8 100%);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 .sign-container h1,
