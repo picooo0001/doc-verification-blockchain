@@ -1,9 +1,11 @@
 # backend/app/routes.py
 
-from flask import Blueprint, request, jsonify, abort
+from flask import Blueprint, request, jsonify, abort, send_file, url_for
 from flask_login import login_required, current_user
 from web3 import Web3
 from .web3utils import w3, get_notary_contract_for_org, get_user_org_address
+from .models import db, Document
+from io import BytesIO
 
 bp = Blueprint("notary", __name__)
 
@@ -20,6 +22,16 @@ def notarize():
     data = file.read()
     doc_hash = w3.keccak(data)
     id_hash = w3.keccak(text=doc_id)
+
+   # Speichere BLOB mit id_hash als Dokumenten-ID
+    document = Document(
+        document_id=id_hash.hex(),  # nutze Blockchain-ID statt Originalnamen
+        org_id=current_user.organization.id,
+        file_data=data,
+        mime_type=file.mimetype
+    )
+    db.session.add(document)
+    db.session.commit()
 
     contract = get_notary_contract_for_org(current_user.organization)
 
@@ -64,60 +76,6 @@ def verify():
 
     return jsonify({"verified": True, "timestamp": ts}), 200
 
-@bp.route("/documents", methods=["GET"])
-@login_required
-def list_documents():
-    """
-    Listet alle Dokumente auf, die zur Organisation des aktuellen Nutzers gehören.
-    Zusätzlich werden Org-Chain-Address und Contract-Address mitgeliefert.
-    """
-    org = current_user.organization
-    contract = get_notary_contract_for_org(org)
-    events = contract.events.DocumentNotarized.create_filter(from_block=0).get_all_entries()
-
-    docs = []
-    for ev in sorted(events, key=lambda e: e.args.timestamp, reverse=True):
-        docs.append({
-            "idHash":       ev.args.idHash.hex(),
-            "documentHash": ev.args.documentHash.hex(),
-            "timestamp":    ev.args.timestamp,
-            "txHash":       ev.transactionHash.hex(),
-            "blockNumber":  ev.blockNumber
-        })
-
-    return jsonify({
-        "orgChainAddress": org.chain_address,
-        "contractAddress": org.contract_address,
-        "documents": docs
-    }), 200
-
-@bp.route("/documents/<string:documentId>", methods=["GET"])
-@login_required
-def get_document(documentId):
-    id_hash = w3.keccak(text=documentId)
-    org = current_user.organization
-    contract = get_notary_contract_for_org(org)
-
-    if contract.functions.timestamps(id_hash).call() == 0:
-        return jsonify({"error": "Document not found"}), 404
-
-    entries = contract.events.DocumentNotarized.create_filter(
-        from_block=0,
-        argument_filters={"idHash": id_hash}
-    ).get_all_entries()
-    ev = entries[0]
-    return jsonify({
-        "organization":    org.name,
-        "orgChainAddress": org.chain_address,
-        "contractAddress": org.contract_address,
-        "documentId":      documentId,
-        "idHash":          ev.args.idHash.hex(),
-        "documentHash":    ev.args.documentHash.hex(),
-        "timestamp":       ev.args.timestamp,
-        "txHash":          ev.transactionHash.hex(),
-        "blockNumber":     ev.blockNumber
-    }), 200
-
 @bp.route("/stats", methods=["GET"])
 @login_required
 def stats():
@@ -158,37 +116,51 @@ def stats():
         "latestNotarization": latest
     }), 200
 
-@bp.route("/documents/<string:documentId>/history", methods=["GET"])
+@bp.route("/documents", methods=["GET"])
 @login_required
-def document_history(documentId):
+def list_documents():
     """
-    Liefert die komplette Historie der Notarisierungen für eine documentId,
-    inklusive Org- und Contract-Info. Sortiert nach Zeitstempel aufsteigend.
+    Listet alle Dokumente auf, die zur Organisation des aktuellen Nutzers gehören.
+    Liefert außerdem `downloadUrl` für jeden Eintrag.
     """
-    id_hash = w3.keccak(text=documentId)
     org = current_user.organization
     contract = get_notary_contract_for_org(org)
+    events = contract.events.DocumentNotarized.create_filter(from_block=0).get_all_entries()
 
-    entries = contract.events.DocumentNotarized.create_filter(
-        from_block=0,
-        argument_filters={"idHash": id_hash}
-    ).get_all_entries()
-
-    if not entries:
-        return jsonify({"error": "Document not found"}), 404
-
-    history = []
-    for ev in sorted(entries, key=lambda e: e.args.timestamp):
-        history.append({
+    docs = []
+    for ev in sorted(events, key=lambda e: e.args.timestamp, reverse=True):
+        id_hash = ev.args.idHash.hex()
+        docs.append({
+            "idHash":       id_hash,
             "documentHash": ev.args.documentHash.hex(),
             "timestamp":    ev.args.timestamp,
             "txHash":       ev.transactionHash.hex(),
-            "blockNumber":  ev.blockNumber
+            "blockNumber":  ev.blockNumber,
+            "downloadUrl":  url_for('notary.download_document', idHash=id_hash, _external=False)
         })
 
     return jsonify({
-        "orgName":          org.name,
         "orgChainAddress": org.chain_address,
         "contractAddress": org.contract_address,
-        "history":         history
+        "documents": docs
     }), 200
+
+# Download-Route jetzt konsistent mit idHash
+@bp.route("/documents/<string:idHash>/download", methods=["GET"])
+@login_required
+def download_document(idHash):
+    """
+    Liefert das zuletzt hochgeladene Blob basierend auf idHash.
+    """
+    doc = Document.query.filter_by(
+        document_id=idHash,
+        org_id=current_user.organization.id
+    ).order_by(Document.id.desc()).first()
+    if not doc:
+        abort(404)
+    return send_file(
+        BytesIO(doc.file_data),
+        mimetype=doc.mime_type,
+        as_attachment=True,
+        download_name=f"{idHash}.pdf"
+    )

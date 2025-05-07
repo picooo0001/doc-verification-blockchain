@@ -25,6 +25,17 @@ class User(db.Model, UserMixin):
 
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id"), nullable=False)
 
+class Document(db.Model):
+    __tablename__ = 'documents'
+    id          = db.Column(db.Integer, primary_key=True)
+    document_id = db.Column(db.String, nullable=False)
+    org_id      = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=False)
+    file_data   = db.Column(db.LargeBinary, nullable=False)
+    mime_type   = db.Column(db.String, nullable=False)
+    __table_args__ = (
+        db.Index('ix_documents_org_doc', 'org_id', 'document_id'),
+    )
+
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode()
 

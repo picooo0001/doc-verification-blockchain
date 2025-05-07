@@ -74,14 +74,26 @@ hinterlegt ist.</p>
               <th>Zeitpunkt</th>
               <th>Tx Hash</th>
               <th>Dokumentenhash</th>
+              <th>Herunterladen</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(doc, index) in documents" :key="doc.txHash">
+            <tr v-for="doc in documents" :key="doc.idHash">
               <td>{{ doc.blockNumber }}</td>
               <td>{{ formatTimestamp(doc.timestamp) }}</td>
-              <td>{{ doc.txHash }}</td>
-              <td>{{ doc.documentHash }}</td>
+              <td>{{ shortenHash(doc.txHash) }}</td>
+              <td>{{ shortenHash(doc.documentHash) }}</td>
+              <td>
+                <!-- Use full backend URL for download and style as clickable link -->
+                <a
+                  :href="`http://localhost:5001/api/documents/${doc.idHash}/download`"
+                  target="_blank"
+                  download
+                  class="download-link"
+                >
+                  Download
+                </a>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -149,25 +161,29 @@ async function loadStats() {
   }
 }
 
-// Funktion zum Laden der Dokument-Transaktionen
-async function loadDocuments() {
-  try {
-    const response = await fetch('http://localhost:5001/api/documents', {
-      method: 'GET',
-      credentials: 'include'
-    })
-    if (!response.ok) throw new Error('Fehler beim Laden der Dokumentdaten')
-    const data = await response.json()
-    documents.value = data.documents.sort((a, b) => b.timestamp - a.timestamp)
-  } catch (err) {
-    console.error('Fehler beim Laden der Dokumentdaten:', err)
-  }
-}
-
-// Funktion zur Formatierung des Timestamps
+/// Timestamps formatieren
 function formatTimestamp(ts) {
   const date = new Date(ts * 1000)
   return date.toLocaleString()
+}
+
+function shortenHash(hash) {
+  return `${hash.slice(0, 6)}...${hash.slice(-4)}`
+}
+
+// Dokumente laden (angepasst auf /api/documents-Endpoint)
+async function loadDocuments() {
+  try {
+    const res = await fetch('http://localhost:5001/api/documents',
+      { method: 'GET', credentials: 'include' }
+    )
+    if (!res.ok) throw new Error(`Fehler beim Laden der Dokumente: ${res.status}`)
+    const data = await res.json()
+    documents.value = data.documents.sort((a, b) => b.timestamp - a.timestamp)
+  } catch (err) {
+    console.error(err)
+    toast.error('Konnte Dokumentliste nicht laden: ' + err.message)
+  }
 }
 
 onMounted(() => {
@@ -315,7 +331,6 @@ async function verifyPdf() {
     toast.error('Netzwerkfehler oder Server nicht erreichbar.');
   }
 }
-
 
 </script>
 
@@ -536,5 +551,11 @@ td {
   justify-content: center;
   align-items: center; /* vertikal, falls gewünscht */
   width: 100%;
+}
+
+.download-link {
+  color: var(--link-color);
+  text-decoration: underline;
+  cursor: pointer;
 }
 </style>
