@@ -20,7 +20,8 @@ def create_app(test_config: dict = None):
          supports_credentials=True,
          origins=["http://localhost:5173"])
     app.config.from_object(Config)
-    
+    # ▶ Entfernt: Config.init_app(app)
+
     # 2) Test-Config (falls vorhanden) direkt überschreiben
     if test_config:
         app.config.update(test_config)
@@ -44,7 +45,7 @@ def create_app(test_config: dict = None):
         from .models import User
         return User.query.get(int(user_id))
 
-    # Blueprints importieren und registrieren (deferred Imports verhindern Zirkuläre Abhängigkeiten)
+    # Blueprints importieren und registrieren
     from .routes import bp as notary_bp
     from .auth import bp as auth_bp
 
