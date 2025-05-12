@@ -16,9 +16,11 @@ class Config:
     )
 
     # Datenbank URL
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        "postgresql://postgres:qE9b^M;42;Ln@db.fffabyazqvvwdaimdcmk.supabase.co:5432/postgres"
+    SQLALCHEMY_DATABASE_URI = (
+        "postgresql://"
+        "postgres.fffabyazqvvwdaimdcmk:"
+        "qE9b%5EM%3B42%3BLn"
+        "@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
