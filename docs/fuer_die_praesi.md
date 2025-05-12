@@ -25,7 +25,7 @@
 - viel "hardcoded" im lokalen Testnet (Wallet keys etc. öffentlich - feste Zuweisung der Org Wallets)
 - hohe Komplexität (Backend - Contracts / Backend - Frontend)
 
-### Umsetzung:
+### Umsetzung (lokal):
 - Ausschnitte aus Notary.sol / Routen (/notarize) zeigen + erklären anhand von Screenshots in der Präsi (immer wieder Bogen schlafen zu den Keypoints (Warum wichtig für Cybersecurity?)
 - Eine Art Roadmap mit den verschiedenen Schritten (Iterationen die immer wieder durchlaufen wurden):
     - Contract erstellen, kompilieren
@@ -33,6 +33,23 @@
     - Backend anpassen / Routen hinzufügen
     - Backend Endpunkte ins Frontend integrieren 
     - alles wieder von vorne
+
+### Migration ins Testnetz (optional):
+- Wie sind wir vorgegangen, um die Applikation auch im Testnet zu "etablieren"? Code Änderungen, Änderungen im Smart Contract etc..
+
+### Ausblick / Wie könnte es weitergehen?
+- Funktionen: jeder User signiert selbst in Zukunft mit eigener Wallet
+- Verwaltbarer machen:
+    - Admin Panel: 
+        - jemand muss prüfen, wer berechtigt ist Funktionen zu nutzen (Wallet whitlisten über GUI)
+        - User einer Orga managen
+    - Smart Contract Code anzeigen -> fördert Transparenz
+    - Mit etherscan.io für mehr Insights arbeiten
+
+### Was existiert schon im Markt (optional):
+- Gibt es ähnliche Plattfromen schon / was wird anders gemacht?
+- Ist das in DE / EU überhaupt möglich -> Gesetzeslage
+- Würde das überhaupt auf Akzeptanz stoßen?
 
 ## Allgemeine Anmerkunden
 - Ist das Elefanten Icon wirklich für Postgres?
