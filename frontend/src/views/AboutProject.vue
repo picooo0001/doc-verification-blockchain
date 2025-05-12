@@ -1,14 +1,15 @@
 <template>
   <div class="main-layout">
   <div class="about-container">
-    <h1>Über dieses Projekt</h1>
+        <h1>Über dieses Projekt</h1>
 
-    <!-- 🔽 Download-Buttons -->
-    <h2>Downloads</h2>
+            <h2>Downloads</h2>
     <div class="download-buttons">
       <a href="/downloads/seminararbeit.pdf" download class="trial-btn">Seminararbeit</a>
       <a href="/downloads/praesentation.pdf" download class="trial-btn">Präsentation</a>
     </div>
+    <img src="../assets/logo_orange.png" alt="Projektlogo" class="project-logo" />
+
 
     <p>
       Dieses Projekt mit dem Arbeitstitel <strong>„Blockchain-basierte Dokumentenverifikation und Notarisierung“</strong> befasst sich mit der Entwicklung eines webbasierten Prototyps [...]
@@ -133,4 +134,10 @@
   transform: translateY(-2px) scale(1.03);
 }
 
+.project-logo {
+  max-width: 300px; /* Erhöhe die Breite des Logos */
+  height: auto;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+}
 </style>

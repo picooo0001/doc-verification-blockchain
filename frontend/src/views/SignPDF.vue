@@ -276,7 +276,7 @@ async function submitToBackend() {
 
     const result = await res.json()
     toast.success('Dokument erfolgreich signiert!')
-    await loadHistory(currentDocumentId.value)
+    await loadDocuments(currentDocumentId.value)
 
   } catch (err) {
     console.error('Fehler beim Signieren:', err)
@@ -337,28 +337,32 @@ async function verifyPdf() {
 <style>
 .main-layout {
   display: flex;
+  align-items: stretch;
   gap: 2.5rem;
   padding: 3rem 2rem 2rem 2rem;
   min-height: 100vh;
   background: linear-gradient(90deg, #fff 0%, #e7d6fb 35%, #cdb6ec 70%, #eab6d8 100%);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  justify-content: center;  /* Zentriert die Container */
-  height: 100%; /* Stellt sicher, dass die Layout-Container volle Höhe einnehmen */
+  justify-content: center;
 }
 
 .left-column {
   display: flex;
   flex-direction: column;
+  justify-content: space-between; /* Damit Signieren + Prüfen den gesamten Platz nutzen */
   gap: 2rem;
-  width: 40%; /* Linke Spalte */
-  max-height: 100%; /* Maximale Höhe für die linke Spalte */
+  width: 40%;
+  flex: 1;
 }
 
 .dashboard-container {
-  width: 50%; /* Breite des rechten Containers */
-  max-height: 100%; /* Maximale Höhe, gleich wie die linke Spalte */
-  overflow-y: auto; /* Scrollen erlauben, falls der Inhalt zu groß ist */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  flex-grow: 1;
+  justify-content: space-between;
 }
+
 
 .sign-container, .check-container, .dashboard-container {
   background: linear-gradient(180deg, #fff 0%, #f6eefd 60%, #f2e4f4 100%);
