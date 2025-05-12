@@ -46,7 +46,7 @@ Blockchain-basierte Verifikation und Notarisierung von Dokumenten.
   Listet Dateien und Ordner, die nicht versioniert werden sollen (z. B. `node_modules/`, `venv/`, lokale Konfigs).
 
 ## 🔧 Setup (lokal)
-- siehe /docs/setup.md
+- siehe `docs/setup.md`
 
 ## ⚙️ Git-Workflow
 - Änderungen committen & pushen → Pull Request gegen `main`
