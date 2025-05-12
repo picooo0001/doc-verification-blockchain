@@ -1,213 +1,129 @@
-# Setup-Anleitung für das Backend
+# Setup-Anleitung für lokales Projekt
 
-Diese Anleitung zeigt, wie du das Backend mit Docker (PostgreSQL), Flask-Migrationen und Testdaten startklar machst.
+Diese Anleitung beschreibt alle nötigen Schritte, um das Projekt **lokal** mit Smart Contracts, Backend und Frontend zu starten. Vorausgesetzt wird, dass das Repository bereits geklont wurde.
 
 ---
 
 ## Voraussetzungen
 
-- **Docker** & **Docker Compose** installiert (bzw. `docker compose` Befehl verfügbar)
-- **Python 3.8+** und **Virtual Environment** (venv)
-- **Node.js** & **Hardhat** (für Smart-Contract-Tests)
+* **Node.js & npm:** Installation von [Node.js](https://nodejs.org/) (Version 14+ empfohlen).
+* **Python 3:** Installation von Python (3.7 oder neuer) und `pip`.
+* **Git:** Zum Klonen und Aktualisieren des Repositories.
+* **Ethereum-Testnetzwerk:** Entweder **Hardhat** oder **Ganache CLI** für ein lokales Blockchain-Netzwerk.
 
 ---
 
-## 1. PostgreSQL starten mit Docker Compose
+## 1. Smart Contracts deployen
 
-Lege eine Datei `docker-compose.yml` im Projekt-Root an:
+1. **In das Contracts-Verzeichnis wechseln:**
 
-```yaml
-version: '3.8'
-services:
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypass
-      POSTGRES_DB: mydb
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-volumes:
-  pgdata:
-```
+   ```bash
+   cd contracts
+   ```
+2. **Dependencies installieren:**
 
-Dann im Terminal im Projekt-Root:
+   ```bash
+   npm install
+   ```
+3. **Hardhat-Node starten:** (lokales Ethereum-Netzwerk)
 
-```bash
-docker compose up -d
-```
+   ```bash
+   npx hardhat node
+   ```
 
-- **Port 5432** wird exposed.
-- DB-Daten werden persistiert im Docker-Volume `pgdata`.
+   Lasse dieses Terminal geöffnet – der Node lauscht nun auf `localhost:8545`.
+4. **Contracts deployen:** In einem neuen Terminal
+
+   ```bash
+   npx hardhat run scripts/deploy.js --network localhost
+   ```
+
+   Nach dem Deploy findest du die Adressen (2x per Default) in der Console. Notiere dir diese & füge sie händisch in die Datenbank ein.
+   Die Chain Adressen sind unter `../contracts/deployed-contracts.json`einsehbar.
 
 ---
 
-## 2. Virtualenv & Abhängigkeiten installieren
+## 2. Backend aufsetzen
 
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+1. **In das Backend-Verzeichnis wechseln:**
 
-### `requirements.txt` sollte enthalten:
-```
-Flask
-Flask-SQLAlchemy
-Flask-Migrate
-Flask-Bcrypt
-Flask-Login
-python-dotenv
-psycopg2-binary
-pyotp
-pytest
-python-dotenv
-web3
-```
+   ```bash
+   cd ../backend
+   ```
+2. **Virtuelle Umgebung anlegen (optional):**
 
----
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate      
+   #Windows: venv\Scripts\activate
+   ```
+3. **Abhängigkeiten installieren:**
 
-## 3. Umgebungsvariablen setzen
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. **Konfiguration anpassen:**
 
-Nehme die `app/config.py` Datei:
-```python
-import os
-from dotenv import load_dotenv
+   * Öffne im Backend-Verzeichnis die Datei `config.py`.
+   * `config.py` lädt über `python-dotenv` Umgebungsvariablen (sofern vorhanden) und definiert:
 
-load_dotenv()
+     * `RPC_URL`: Umgebungsvariable `RPC_URL`, Default: `"http://127.0.0.1:8545"`
+     * `CONTRACT_ABI_PATH`: Umgebungsvariable `CONTRACT_ABI_PATH`, Default: `"../contracts/artifacts/contracts/Notary.sol/Notary.json"`
+     * `SECRET_KEY`: Umgebungsvariable `SECRET_KEY`, Default: `"setz-dir-ein-geheimes-key"`
+     * `SQLALCHEMY_DATABASE_URI`: Umgebungsvariable `SQLALCHEMY_DATABASE_URI`, Default: `"postgresql://"
+        "postgres.fffabyazqvvwdaimdcmk:"
+        "qE9b%5EM%3B42%3BLn"
+        "@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"`
+        (Datenbak URL - Docker wird nicht mehr benötigt)
+5. **Datenbank-Initalisierung (falls nötig):**
+   ```bash
+   flask db upgrade
+   ```
+6. **Backend starten:**
 
-class Config:
-    # Lokaler Hardhat RPC
-    RPC_URL = os.getenv("RPC_URL", "http://127.0.0.1:8545")
-    # Pfad zur Datei mit der deployed contract address
-    DEPLOYED_ADDRESS_FILE = os.getenv(
-        "DEPLOYED_ADDRESS_FILE",
-        "../contracts/contracts/deployed-address.txt"
-    )
-    # Contract ABI – wird später von web3utils geladen
-    CONTRACT_ABI_PATH = os.getenv(
-        "CONTRACT_ABI_PATH",
-        "../contracts/artifacts/contracts/Notary.sol/Notary.json"
-    )
-    # Datenbank URL
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql://myuser:mypass@localhost:5432/mydb")
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+   ```bash
+   python run.py
+   ```
 
-    # Security
-    SECRET_KEY = os.getenv("SECRET_KEY", "setz-dir-ein-geheimes-key")
-
-
-```
----
-
-## 4. App starten und Migrations-Commands
-
-### a) App-Umgebung konfigurieren
-
-```bash
-export FLASK_APP=run.py
-export FLASK_ENV=development
-```
-
-### b) Migration initialisieren (erstmalig)
-
-```bash
-flask db init        # erzeugt migrations/
-```
-
-### c) Migrationsskript erstellen
-
-```bash
-flask db migrate -m "Initial schema: Organization + User"
-```
-
-### d) Migration anwenden
-
-```bash
-flask db upgrade
-```
-
-Damit sind die Tabellen `organizations` und `users` in Postgres angelegt.
+   Das Backend läuft jetzt unter `http://localhost:5001`.
 
 ---
 
-## 5. Testdaten anlegen (Flask Shell)
+## 3. Frontend starten
 
-```bash
-flask shell
-```
+1. **In das Frontend-Verzeichnis wechseln:**
 
-```python
->>> from app import db
->>> from app.models import Organization, User
->>> org = Organization(name='TestOrg')
->>> user = User(email='alice@test.org', organization=org)
->>> user.set_password('Secret123')
->>> user.generate_otp_secret()
->>> db.session.add_all([org, user])
->>> db.session.commit()
->>> print('OTP-Secret:', user.otp_secret)
->>> exit()
-```
----
+   ```bash
+   cd ../frontend
+   ```
+2. **Dependencies installieren:**
 
-## 6. Backend starten
+   ```bash
+   npm install
+   ```
+3. **Konfiguration anpassen:**
 
-```bash
-python run.py
-```
+   * Setze in der Frontend-Initialisierung (z. B. direkt in main.js oder einer entsprechenden Datei) die Basis-URL für Axios:
+   ```javascript
+   axios.defaults.baseURL = 'http://localhost:5001'
+   ```
+4. **Frontend starten:**
 
-Das Backend läuft auf **http://localhost:5001** und verbindet sich zur Postgres-DB.
+   ```bash
+   npm run dev
+   ```
+
+   Standardmäßig unter `http://localhost:5173` erreichbar.
 
 ---
 
-## 7. Lokaled Hardhat Testnetz aufsetzen
+## 4. Erste Tests
 
-Wie gehabt Hardhat Testnetz mit folgendem Command aufsetzen:
-
-```bash
-npx hardhat node
-```
-
-Ist das Testnetz online, den Contract deployen (in einem neuen Terminal):
-
-```bash
-npx hardhat run scripts/deploy.js --network localhost
-```
----
-
-## 7. Tests ausführen
-
-- **Unit-Tests** (SQLite-In-Memory):
-  ```bash
-  pytest -q
-  ```
----
-
-## 8. Endpoints testen
-
-- **Notarize**:  
-  `curl -F "file=@/path/to/doc.pdf" -F "documentId=test1" http://localhost:5001/api/notarize`
-
-- **Verify**:  
-  `curl -F "file=@/path/to/doc.pdf" http://localhost:5001/api/verify`
-
-- **Login** (ergänze Secret mit dem OTP Secret aus der DB):  
-  ```bash
-  OTP=$(python3 - <<EOF
-  import pyotp
-  print(pyotp.TOTP("$SECRET").now())
-  EOF
-  )
-  curl -F "email=alice@test.org" -F "password=Secret123" -F "otp=$OTP" http://localhost:5001/login
-  ```
-
-- **Logout**:  
-  `curl -X POST http://localhost:5001/logout`
+* **Test-Nutzer anlegen:** Lege in der Datenbank einen Benutzer an (via Datenbank): E-Mail, Passwort, Organisation und (optional) `wallet_address`.
+* **Login prüfen:** Melde dich im Browser unter `http://localhost:8080` an. Für Wallet-Login MetaMask auf lokales Netzwerk stellen und Nonce signieren.
+* **2FA einrichten:** Über Profil → 2FA-Setup secret und QR-Code erzeugen.
+* **Dokument notarize/verify:** Upload-Seite im Frontend nutzen – PDF hochladen, anschließend Verifikation testen.
+* **Dokumentenliste & Statistiken:** Überprüfe `/api/documents` und `/api/stats` im Browser.
 
 ---
 
