@@ -57,15 +57,38 @@ hinterlegt ist.</p>
       </div>
       <p>Statistiken über signierte und überprüfte Dokumente erscheinen hier.</p>
       
-      <div v-if="stats && !stats.error">
-        <p><strong>🧾 Gesamtzahl der Notarisierungen:</strong> {{ stats.total }}</p>
-        <p><strong>📅 Erste Notarisierung:</strong> {{ stats.firstDate }}</p>
-        <p><strong>🧬 Hash der ersten Notarisierung:</strong> {{ stats.firstHash }}</p>
-        <p><strong>📅 Letzte Notarisierung:</strong> {{ stats.latestDate }}</p>
-        <p><strong>🧬 Hash der letzten Notarisierung:</strong> {{ stats.latestHash }}</p>
+      <!-- Statistiken -->
+      <div v-if="stats && !stats.error" class="stats">
+        <p>
+          <strong>🔗 Contract-Adresse:</strong>
+          <a
+            :href="`https://sepolia.etherscan.io/address/${stats.contractAddress}`"
+            target="_blank"
+            class="text-blue-600 underline"
+          >{{ stats.contractAddress }}</a>
+        </p>
+        <p v-if="stats.contractCreator">
+          <strong>👤 Contract-Creator:</strong>
+          <a
+            :href="`https://sepolia.etherscan.io/address/${stats.contractCreator}`"
+            target="_blank"
+            class="text-blue-600 underline"
+          >{{ stats.contractCreator }}</a>
+        </p>
+        <p><strong>📦 Deploy-Block:</strong> {{ stats.deployBlock }}</p>
+        <p><strong>🧾 Gesamtzahl der Notarisierungen:</strong> {{ stats.totalNotarizations }}</p>
+        <p>
+          <strong>🏁 Erste Notarisierung:</strong> {{ stats.firstDate }}
+          <code class="ml-2">{{ stats.firstHash }}</code>
+        </p>
+        <p>
+          <strong>🏁 Letzte Notarisierung:</strong> {{ stats.latestDate }}
+          <code class="ml-2">{{ stats.latestHash }}</code>
+        </p>
       </div>
 
-      <div v-if="documents && documents.length > 0">
+      <!-- Notarisierungshistorie -->
+      <div v-if="documents && documents.length > 0" class="history">
         <h2>🕓 Notarisierungshistorie</h2>
         <table>
           <thead>
@@ -81,16 +104,12 @@ hinterlegt ist.</p>
             <tr v-for="doc in documents" :key="doc.idHash">
               <td>{{ doc.blockNumber }}</td>
               <td>{{ formatTimestamp(doc.timestamp) }}</td>
+              <!-- hier transactionHash, nicht txHash -->
               <td>{{ shortenHash(doc.txHash) }}</td>
+              <!-- hier documentHash -->
               <td>{{ shortenHash(doc.documentHash) }}</td>
               <td>
-                <!-- Use full backend URL for download and style as clickable link -->
-                <a
-                  :href="`http://localhost:5001/api/documents/${doc.idHash}/download`"
-                  target="_blank"
-                  download
-                  class="download-link"
-                >
+                <a :href="`http://localhost:5001${doc.downloadUrl}`" target="_blank">
                   Download
                 </a>
               </td>
@@ -98,8 +117,8 @@ hinterlegt ist.</p>
           </tbody>
         </table>
       </div>
-      <div v-else>
-        <p class="dashboard-placeholder">Keine Notarisierungen gefunden.</p>
+      <div v-else class="dashboard-placeholder">
+        <p>Keine Notarisierungen gefunden.</p>
       </div>
     </div>
   </div>
@@ -108,56 +127,66 @@ hinterlegt ist.</p>
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useToast } from 'vue-toastification'
+import { ethers }        from 'ethers'
+import NotaryArtifact     from '@artifacts/Notary.json'
+import api from '@/api'
 
 const toast = useToast()
-const stats = ref(null)
 const pdfFiles = ref([])
 const pdfUrls = ref([])
 const checkResult = ref(null)
 const checkPdfFile = ref(null)
 const currentDocumentId = ref(null)
+const stats = ref({
+  contractAddress:    '',
+  contractCreator:    '',
+  deployBlock:        null,
+  totalNotarizations: 0,
+  firstDate:          '—',
+  firstHash:          '—',
+  latestDate:         '—',
+  latestHash:         '—',
+})
 let intervalId = null
 const documents = ref([])
+const txHash = ref(null)
 
-// Funktion zum Laden der Statistiken
+
 async function loadStats() {
   try {
-    const response = await fetch('http://localhost:5001/api/stats', {
-      method: 'GET',
-      credentials: 'include'
-    })
-
-    if (!response.ok) throw new Error('Fehler beim Laden der Statistiken')
-
-    const data = await response.json()
-
-    const first = data.firstNotarization
-    const latest = data.latestNotarization
-    let firstDate = '—'
-    let firstHash = '—'
-    let latestDate = '—'
-    let latestHash = '—'
-
-    if (first && first.timestamp) {
-      firstDate = new Date(first.timestamp * 1000).toLocaleString()
-      firstHash = first.documentHash
-    }
-
-    if (latest && latest.timestamp) {
-      latestDate = new Date(latest.timestamp * 1000).toLocaleString()
-      latestHash = latest.documentHash
-    }
-
+    const { data } = await api.get('/stats')
     stats.value = {
-      total: data.totalNotarizations || 0,
-      firstDate,
-      firstHash,
-      latestDate,
-      latestHash
+      contractAddress:    data.contractAddress,
+      contractCreator:    data.contractCreator,
+      deployBlock:        data.deployBlock,
+      totalNotarizations: data.totalNotarizations || 0,
+      firstDate:  data.firstNotarization.timestamp
+        ? new Date(data.firstNotarization.timestamp * 1000).toLocaleString()
+        : '—',
+      firstHash:  data.firstNotarization.documentHash || '—',
+      latestDate: data.latestNotarization.timestamp
+        ? new Date(data.latestNotarization.timestamp * 1000).toLocaleString()
+        : '—',
+      latestHash: data.latestNotarization.documentHash || '—',
     }
   } catch (err) {
     console.error('Dashboard-Fehler:', err)
-    stats.value = { error: 'Fehler beim Laden der Statistiken.' }
+    toast.error('Fehler beim Laden der Statistiken.')
+  }
+}
+
+async function loadDocuments() {
+  try {
+    const { data } = await api.get('/documents')
+    documents.value = data.documents
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .map(doc => ({
+        ...doc,
+        date: new Date(doc.timestamp * 1000).toLocaleString()
+      }))
+  } catch (e) {
+    console.error('Dokument-Fehler:', e)
+    toast.error('Konnte Dokumentliste nicht laden.')
   }
 }
 
@@ -167,23 +196,9 @@ function formatTimestamp(ts) {
   return date.toLocaleString()
 }
 
-function shortenHash(hash) {
-  return `${hash.slice(0, 6)}...${hash.slice(-4)}`
-}
-
-// Dokumente laden (angepasst auf /api/documents-Endpoint)
-async function loadDocuments() {
-  try {
-    const res = await fetch('http://localhost:5001/api/documents',
-      { method: 'GET', credentials: 'include' }
-    )
-    if (!res.ok) throw new Error(`Fehler beim Laden der Dokumente: ${res.status}`)
-    const data = await res.json()
-    documents.value = data.documents.sort((a, b) => b.timestamp - a.timestamp)
-  } catch (err) {
-    console.error(err)
-    toast.error('Konnte Dokumentliste nicht laden: ' + err.message)
-  }
+function shortenHash(hash = '') {
+  if (typeof hash !== 'string' || hash.length === 0) return '—'
+  return `${hash.slice(0,8)}…${hash.slice(-4)}`
 }
 
 onMounted(() => {
@@ -209,80 +224,159 @@ function handleFileUpload(event) {
   pdfUrls.value = files.map(file => URL.createObjectURL(file))
 }
 
-// Funktion zum Senden der Datei an das Backend zur Signierung
-
 async function submitToBackend() {
+  // ───────────────────────────────────────
+  // 0️⃣ Datei vorhanden?
   if (pdfFiles.value.length === 0) {
     toast.warning('Bitte lade eine PDF-Datei zum Signieren hoch.')
     return
   }
-
-  const file = pdfFiles.value[0]
+  const file       = pdfFiles.value[0]
   const documentId = file.name
   currentDocumentId.value = documentId
 
-  // Schritt 1: Prüfung auf vorhandene Signatur via /api/verify
-  const formDataCheck = new FormData()
-  formDataCheck.append('file', file)
-
+  // ───────────────────────────────────────
+  // 1️⃣ Hashes vom Backend holen
+  let idHash, docHash
   try {
-    const verifyRes = await fetch('http://localhost:5001/api/verify', {
-      method: 'POST',
-      body: formDataCheck,
-      credentials: 'include'
-    })
+    const form = new FormData()
+    form.append('file', file)
+    form.append('documentId', documentId)
+    const { data: prep } = await api.post('/hashes', form)
+    idHash  = prep.idHash
+    docHash = prep.docHash
+  } catch (err) {
+    console.error('Hashes-Endpoint Fehler:', err)
+    toast.error(err.response?.data?.error || 'Fehler beim Vorbereiten der Hashes.')
+    return
+  }
 
-    let verifyData = {}
-    try {
-      verifyData = await verifyRes.json()
-    } catch (e) {
-      toast.error('Fehler beim Lesen der Prüfantwort.')
-      return
-    }
-
-    if (verifyRes.ok && verifyData.verified) {
-      const date = new Date(verifyData.timestamp * 1000).toLocaleString()
-      toast.warning(`Dieses Dokument wurde bereits am ${date} signiert.`)
-      return
-    }
-
-    // Schritt 2: Datei hochladen & signieren
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('documentId', documentId)
-
-    const res = await fetch('http://localhost:5001/api/notarize', {
-      method: 'POST',
-      body: formData,
-      credentials: 'include'
-    })
-
-    if (!res.ok) {
-      let result = {}
+  // ───────────────────────────────────────
+  // 2️⃣ MetaMask & Sepolia switch
+  if (!window.ethereum) {
+    toast.error('MetaMask nicht gefunden.')
+    return
+  }
+  const ethereum = window.ethereum
+  try {
+    await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xaa36a7' }] })
+  } catch (err) {
+    if (err.code === 4902) {
+      // Chain hinzufügen und nochmal switchen
       try {
-        result = await res.json()
-      } catch (e) {
-        toast.error('Serverfehler: Antwort konnte nicht gelesen werden.')
+        await ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: '0xaa36a7',
+            chainName: 'Sepolia Testnetz',
+            rpcUrls: ['https://sepolia.infura.io/v3/3bdc1b0ecd9f49fb8da028965c9683cb'],
+            nativeCurrency: { name: 'SepoliaETH', symbol: 'SEP', decimals: 18 },
+            blockExplorerUrls: ['https://sepolia.etherscan.io'],
+          }],
+        })
+        await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xaa36a7' }] })
+      } catch (addErr) {
+        console.error('Sepolia hinzufügen fehlgeschlagen:', addErr)
+        toast.error('Konnte Sepolia nicht hinzufügen.')
         return
       }
-
-      if (result.error === 'Document already signed') {
-        toast.warning('Das Dokument wurde bereits signiert.')
-      } else {
-        toast.error(result.error || 'Unbekannter Fehler beim Signieren.')
-      }
+    } else {
+      console.error('Netzwerkwechsel-Fehler:', err)
+      toast.error('Fehler beim Netzwerkwechsel: ' + err.message)
       return
     }
-
-    const result = await res.json()
-    toast.success('Dokument erfolgreich signiert!')
-    await loadHistory(currentDocumentId.value)
-
-  } catch (err) {
-    console.error('Fehler beim Signieren:', err)
-    toast.error('Netzwerkfehler oder Server nicht erreichbar.')
   }
+
+  const provider = new ethers.BrowserProvider(ethereum)
+  try {
+    await provider.send('eth_requestAccounts', [])
+  } catch (err) {
+    console.error('Accounts-Request fehlgeschlagen:', err)
+    toast.error('Zugriff auf MetaMask-Konten verweigert.')
+    return
+  }
+  const signer     = await provider.getSigner()
+  const signerAddr = await signer.getAddress()
+
+  // ───────────────────────────────────────
+  // 2.1️⃣ Contract-Address von Backend holen
+  let contractAddress
+  try {
+    const { data } = await api.get('/get_contract_address')
+    contractAddress = data.contractAddress
+  } catch (err) {
+    console.error('Fehler beim Laden der Contract-Adresse:', err)
+    toast.error('Konnte Contract-Adresse nicht laden.')
+    return
+  }
+
+  // ───────────────────────────────────────
+  // 3️⃣ Contract-Instanz erstellen
+  const contract = new ethers.Contract(
+    contractAddress,
+    NotaryArtifact.abi,
+    signer
+  )
+
+  // ───────────────────────────────────────
+  // Debug: prüfen, ob die richtigen Werte kommen
+  console.log('▶️ verwende Contract @', contractAddress)
+  console.log('▶️ orgAdmins[thisAccount] =', await contract.orgAdmins(signerAddr))
+  console.log('▶️ notarized[docHash] =', await contract.notarized(docHash))
+
+  // ───────────────────────────────────────
+  // 4️⃣ Simulation
+  try {
+    await provider.call({
+      to:   contractAddress,
+      from: signerAddr,
+      data: contract.interface.encodeFunctionData('notarize', [idHash, docHash]),
+    })
+    console.log('Simulation OK – kein Revert erwartet.')
+  } catch (simErr) {
+    console.error('Simulation reverted:', simErr)
+    const reason = simErr.reason || simErr.data || simErr.message
+    toast.error(`Vorab-Simulation fehlgeschlagen: ${reason}`)
+    return
+  }
+
+  // ───────────────────────────────────────
+  // 5️⃣ On-Chain senden
+  let tx
+  try {
+    toast.info('Sende Transaktion …')
+    tx = await contract.notarize(idHash, docHash)
+    toast.success(`On-Chain gesendet! TxHash: ${tx.hash.slice(0,10)}…`)
+    await tx.wait(1)
+  } catch (err) {
+    console.error('On-Chain Error:', err)
+    const reason = err.reason
+                 || (err.message?.includes('execution reverted')
+                     ? 'Transaktion abgelehnt oder schon signiert.'
+                     : err.message)
+    toast.error(reason)
+    return
+  }
+
+  // ───────────────────────────────────────
+  // 6️⃣ DB-Commit
+  try {
+    await api.post('/notarize/commit', {
+      idHash,
+      txHash: tx.hash
+    })
+    toast.success('Dokument in der DB gespeichert.')
+  } catch (err) {
+    console.error('DB-Commit fehlgeschlagen:', err)
+    toast.error('Fehler beim Speichern in der DB.')
+    return
+  }
+
+  // ───────────────────────────────────────
+  // 7️⃣ Historie neu laden
+  await loadHistory(currentDocumentId.value)
 }
+
 function checkPdf(event) {
   const file = event.target.files[0];
   if (file && file.type === 'application/pdf') {
@@ -293,42 +387,37 @@ function checkPdf(event) {
 }
 async function verifyPdf() {
   if (!checkPdfFile.value) {
-    toast.warning('Bitte lade eine PDF-Datei zum Prüfen hoch.');
-    return;
+    toast.warning('Bitte lade eine PDF-Datei zum Prüfen hoch.')
+    return
   }
-
-  const formData = new FormData();
-  formData.append('file', checkPdfFile.value);
-
+  const verifyForm = new FormData()
+  verifyForm.append('file', checkPdfFile.value)
   try {
-    const response = await fetch('http://localhost:5001/api/verify', {
-      method: 'POST',
-      body: formData,
-      credentials: 'include'
-    });
-
-    let result = {};
-    try {
-      result = await response.json();
-    } catch (e) {
-      toast.error('Serverantwort konnte nicht gelesen werden.');
-      return;
+    const { data: verifyData } = await api.post('/verify', verifyForm)
+    if (verifyData.verified) {
+      const date = new Date(verifyData.timestamp * 1000).toLocaleString()
+      toast.success(`Dokument wurde am ${date} verifiziert.`)
     }
-
-    if (response.ok && result.verified) {
-      const date = new Date(result.timestamp * 1000).toLocaleString();
-      toast.success(`Dokument wurde am ${date} verifiziert.`);
-    } else if (response.status === 404) {
-      toast.warning('Dokument nicht in der Blockchain gefunden.');
-    } else if (response.status === 403) {
-      toast.error('Nicht berechtigt, dieses Dokument zu prüfen.');
-    } else {
-      toast.error(result.error || 'Unbekannter Fehler bei der Prüfung.');
+  } catch (e) {
+    if (e.response?.status === 404) toast.warning('Dokument nicht in der Blockchain gefunden.')
+    else if (e.response?.status === 403) toast.error('Nicht berechtigt, dieses Dokument zu prüfen.')
+    else {
+      console.error(e)
+      toast.error(e.response?.data?.error || 'Unbekannter Fehler bei der Prüfung.')
     }
+  }
+}
 
+async function loadHistory(documentId) {
+  if (!documentId) return
+  try {
+    // ruft alle Dokument-Events der Organisation ab
+    const { data } = await api.get('/documents')
+    // filtert nur den Eintrag mit genau dem idHash
+    history.value = data.documents.filter(doc => doc.idHash === documentId)
   } catch (err) {
-    console.error('Netzwerkfehler:', err);
-    toast.error('Netzwerkfehler oder Server nicht erreichbar.');
+    console.error('Fehler beim Laden der Dokument-Historie:', err)
+    toast.error('Dokument-Historie konnte nicht geladen werden.')
   }
 }
 

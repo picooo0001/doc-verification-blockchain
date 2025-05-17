@@ -50,6 +50,6 @@ def create_app(test_config: dict = None):
     from .auth import bp as auth_bp
 
     app.register_blueprint(notary_bp, url_prefix="/api")
-    app.register_blueprint(auth_bp)
+    app.register_blueprint(auth_bp, url_prefix="/api")
 
     return app

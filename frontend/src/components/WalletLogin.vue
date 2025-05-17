@@ -7,50 +7,62 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { ethers } from 'ethers'
-import axios from 'axios'
-import { useRouter } from 'vue-router'
-// Importiere Toastification
-import { useToast } from 'vue-toastification'
+import { ref }       from 'vue'
+import { ethers }     from 'ethers'
+import api            from '@/api'         
+import { useRouter }  from 'vue-router'
+import { useToast }   from 'vue-toastification'
 
 const address = ref(null)
-const error = ref(null)
-const router = useRouter()
-// Initialisiere Toast
-const toast = useToast()
+const error   = ref(null)
+const router  = useRouter()
+const toast   = useToast()
 
-async function loginWithMetaMask() {
+async function loginWithMetaMask () {
   error.value = null
+
   if (!window.ethereum) {
-    toast.error('MetaMask fehlt')  // Fehler-Toast
+    toast.error('MetaMask fehlt')
     return
   }
 
   try {
+    // Wallet verbinden
     const provider = new ethers.BrowserProvider(window.ethereum)
     await provider.send('eth_requestAccounts', [])
-    const signer = await provider.getSigner()
-    const addr = await signer.getAddress()
+    const signer  = await provider.getSigner()
+    const addr    = await signer.getAddress()
     address.value = addr
 
-    // 1) Nonce holen
-    const { data: { nonce } } = await axios.get('/login/nonce', { params: { address: addr } })
+    // Nonce holen über /api/login/nonce
+    const { data: { nonce } } = await api.get('/login/nonce', {
+      params: { address: addr }
+    })
     if (!nonce) throw new Error('Nonce fehlt')
-    
-    // 2) Signatur
+
+    // Signatur erzeugen
     const signature = await signer.signMessage(nonce)
 
-    // 3) Login-Request
-    await axios.post('/login/wallet', { address: addr, signature })
-    
-    // 4) als eingeloggt markieren und weiter
-    localStorage.setItem('isLoggedIn', 'true')
+    // Wallet-Login über /api/login/wallet
+    const { data } = await api.post('/login/wallet', {
+      address: addr,
+      signature
+    })
+
+    const user    = data.user || {}
+    const isOwner = Boolean(user.isOwner)
+
+    localStorage.setItem('isLoggedIn',     'true')
+    localStorage.setItem('isOwner',        String(isOwner))
+    localStorage.setItem('orgId',          String(user.organizationId))
+    localStorage.setItem('walletAddress',  user.wallet || '')
+
+    toast.success('Erfolgreich eingeloggt!')
     router.push('/sign-pdf')
-    toast.success('Erfolgreich eingeloggt!')  // Erfolgs-Toast
+
   } catch (err) {
     console.error(err)
-    toast.error('Fehler beim Einloggen')  // Fehler-Toast bei Problemen
+    toast.error('Fehler beim Einloggen: ' + (err.response?.data?.error || err.message))
   }
 }
 </script>
@@ -75,10 +87,10 @@ async function loginWithMetaMask() {
 .trial-btn {
   background: #1a1726;
   color: #fff;
-  border: 2px solid transparent; /* <-- hier */
-  border-radius: 7px;              /* Weniger stark abgerundet */
-  padding: 0.7rem 1.7rem;          /* Weniger hoch und schmaler */
-  font-size: 1.15rem;              /* Kleinere Schrift */
+  border: 2px solid transparent;
+  border-radius: 7px;
+  padding: 0.7rem 1.7rem;
+  font-size: 1.15rem;
   font-weight: 700;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   cursor: pointer;
@@ -91,9 +103,9 @@ async function loginWithMetaMask() {
 
 .trial-btn:hover,
 .trial-btn:focus {
-  background: #ffffff;        /* weißer Hintergrund */
-  color: #000000;             /* schwarze Schrift */
-  border: 2px solid #000000;  /* schwarzer Rand */
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
   transform: translateY(-2px) scale(1.03);
 }
 </style>

@@ -1,108 +1,98 @@
 <template>
   <div class="main-layout">
-  <div class="login-container">
-    <h1>Login</h1>
-    <p class="subtitle">Melde dich mit deinen Organisations-Credentials an.</p>
+    <div class="login-container">
+      <h1>Login</h1>
+      <p class="subtitle">Melde dich mit deinen Organisations‑Credentials an.</p>
 
-    <!-- Form-Element für automatisches Login bei Enter -->
-    <form @submit.prevent="login">
-      <div class="form-group">
-        <label for="email">E-Mail</label>
-        <input type="email" id="email" v-model="email" placeholder="name@example.com" />
-      </div>
+      <!-- Formular: Enter löst submit aus -->
+      <form @submit.prevent="login">
+        <div class="form-group">
+          <label for="email">E‑Mail</label>
+          <input type="email" id="email" v-model.trim="email" placeholder="name@example.com" required />
+        </div>
 
-      <div class="form-group">
-        <label for="password">Passwort</label>
-        <input type="password" id="password" v-model="password" placeholder="••••••••" />
-      </div>
-      
-      <!-- 2FA Eingabefeld nur anzeigen, wenn erforderlich -->
-      <div v-if="is2FARequired" class="form-group">
-        <label for="otp">2FA-Code</label>
-        <input
-          type="text"
-          id="otp"
-          v-model="otp"
-          placeholder="Gib deinen 6-stelligen Code ein"
-          maxlength="6"
-        />
-      </div>
-      <div class="action-container">
-        <button class="trial-btn" type="submit">Login</button>
-      </div>
-    </form>
+        <div class="form-group">
+          <label for="password">Passwort</label>
+          <input type="password" id="password" v-model="password" placeholder="••••••••" required />
+        </div>
+
+        <!-- 2FA‑Feld nur, wenn Server es verlangt -->
+        <div v-if="is2FAReq" class="form-group">
+          <label for="otp">2FA‑Code</label>
+          <input
+            type="text"
+            id="otp"
+            v-model="otp"
+            placeholder="6‑stelliger Code"
+            maxlength="6"
+            pattern="\d{6}"
+            required
+          />
+        </div>
+
+        <div class="action-container">
+          <button class="trial-btn" type="submit">Login</button>
+        </div>
+      </form>
+
       <hr />
       <h3>Oder per Wallet:</h3>
       <WalletLogin />
+    </div>
   </div>
-</div>
 </template>
 
 <script setup>
-import { useToast } from 'vue-toastification'
-
 import { ref } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import WalletLogin from '@/components/WalletLogin.vue'
+import api from '@/api'
 
-// Reaktive Variablen
-
-const toast = useToast()
-const email = ref('')
+// Reaktive States
+const email    = ref('')
 const password = ref('')
-const otp = ref('')  // Variable für den 2FA-Code
-const is2FARequired = ref(false)  // Flag, ob 2FA erforderlich ist
+const otp      = ref('')
+const is2FAReq = ref(false)
+
+const toast  = useToast()
 const router = useRouter()
 
-// Login-Funktion
 async function login() {
-  if (!email.value || !password.value) {
-    toast.error('Bitte fülle alle Felder aus.')
-    return
-  }
-
-  const loginData = { email: email.value, password: password.value }
-
-  if (is2FARequired.value) {
-    if (!otp.value) {
-      toast.warning("Bitte gib deinen 2FA-Code ein.")
-      return
-    }
-    loginData.otp = otp.value
-  }
-
   try {
-    const response = await axios.post('http://localhost:5001/login', loginData, {
-      withCredentials: true,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      }
-    })
+    // Payload zusammenstellen
+    const payload = { email: email.value, password: password.value }
+    if (is2FAReq.value) payload.otp = otp.value
+
+    // API‑Call über Axios-Instanz
+    const { data } = await api.post('/login', payload)
+
+    // Erfolg – User‑Info im data-Objekt
+    const user    = data.user || {}
+    const isOwner = Boolean(user.isOwner)
+
+    localStorage.setItem('isLoggedIn',   'true')
+    localStorage.setItem('isOwner',      String(isOwner))
+    localStorage.setItem('orgId',        String(user.organizationId))
+    localStorage.setItem('walletAddress', user.wallet || '')
 
     toast.success('Login erfolgreich.')
-    localStorage.setItem('isLoggedIn', 'true')
     router.push('/sign-pdf')
-
-  } catch (error) {
-    const err = error.response?.data?.error
-
-    if (err === '2FA erforderlich') {
-      is2FARequired.value = true
-      toast.info('Bitte gib deinen 2FA-Code ein.')
-    } else if (err === 'Ungültiges OTP') {
-      toast.error('Der eingegebene 2FA-Code ist falsch.')
-    } else if (err === 'Ungültige E-Mail oder Passwort') {
-      toast.error('Überprüfe deine E-Mail und dein Passwort.')
+  } catch (err) {
+    const msg = err.response?.data?.error || err.message
+    if (msg === '2FA erforderlich') {
+      is2FAReq.value = true
+      toast.info('Bitte gib deinen 2FA‑Code ein.')
+    } else if (msg === 'Ungültiges OTP') {
+      toast.error('Der eingegebene 2FA‑Code ist falsch.')
+    } else if (msg === 'Ungültige E‑Mail oder Passwort') {
+      toast.error('Überprüfe deine E‑Mail und dein Passwort.')
     } else {
-      toast.error('Login fehlgeschlagen: ' + (err || 'Unbekannter Fehler'))
+      toast.error('Login fehlgeschlagen: ' + msg)
     }
   }
 }
-
 </script>
-
 <style scoped>
 .main-layout {
   display: flex;

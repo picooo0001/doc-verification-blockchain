@@ -6,7 +6,7 @@ class Organization(db.Model):
     __tablename__ = "organizations"
     id            = db.Column(db.Integer, primary_key=True)
     name          = db.Column(db.String(128), unique=True, nullable=False)
-    chain_address = db.Column(db.String(42), unique=True, nullable=False)
+    deploy_block     = db.Column(db.Integer,      nullable=True)
     contract_address = db.Column(db.String(42), unique=True, nullable=True)
     users         = db.relationship("User", backref="organization", lazy=True)
 
@@ -22,6 +22,8 @@ class User(db.Model, UserMixin):
     email          = db.Column(db.String(128), unique=True, nullable=False)
     password_hash  = db.Column(db.String(128), nullable=False)
     otp_secret     = db.Column(db.String(32), nullable=True)
+
+    is_owner       = db.Column(db.Boolean, default=False, nullable=False)
 
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id"), nullable=False)
 
@@ -47,6 +49,8 @@ class Document(db.Model):
     org_id      = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=False)
     file_data   = db.Column(db.LargeBinary, nullable=False)
     mime_type   = db.Column(db.String, nullable=False)
+    tx_hash     = db.Column(db.String(66), nullable=False)
+
     __table_args__ = (
         db.Index('ix_documents_org_doc', 'org_id', 'document_id'),
     )

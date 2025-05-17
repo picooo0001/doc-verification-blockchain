@@ -3,20 +3,29 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clean":   "rimraf artifacts cache typechain",
+    "compile": "hardhat compile",
+
+    "copy-artifacts": "shx cp -f artifacts/contracts/Notary.sol/Notary.json ../frontend/src/artifacts/",
+
+    "build": "npm run clean && npm run compile && npm run copy-artifacts",
+
+    "test": "hardhat test"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.",
   "devDependencies": {
+    "shx": "^0.3.4",
+    "rimraf": "^5.0.1",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@nomicfoundation/hardhat-ignition": "^0.15.11",
     "@nomicfoundation/hardhat-ignition-ethers": "^0.15.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.13",
     "@nomicfoundation/ignition-core": "^0.15.11",
     "@typechain/ethers-v6": "^0.5.0",
     "@typechain/hardhat": "^9.0.0",
@@ -116,6 +125,7 @@
     "diff": "^5.2.0",
     "difflib": "^0.2.4",
     "dir-glob": "^3.0.1",
+    "dotenv": "^16.5.0",
     "dunder-proto": "^1.0.1",
     "elliptic": "^6.6.1",
     "emoji-regex": "^8.0.0",

@@ -1,50 +1,45 @@
 # backend/app/web3utils.py
-
-from web3 import Web3
-import json
 import os
-from .config import Config
+import json
 from .models import Organization
+from web3 import Web3, HTTPProvider
+from .config import Config
 
-# Web3-Provider
-w3 = Web3(Web3.HTTPProvider(Config.RPC_URL))
+with open(Config.CONTRACT_ABI_PATH) as f:
+    NOTARY_ABI = json.load(f)['abi']
+
+RPC_URL = os.getenv("RPC_URL")
+if not RPC_URL:
+    raise RuntimeError("Es ist keine RPC_URL in der Umgebung gesetzt.")
+
+w3 = Web3(HTTPProvider(RPC_URL))
 if not w3.is_connected():
-    raise ConnectionError(f"Cannot connect to {Config.RPC_URL}")
+    raise RuntimeError(f"Kann keine Verbindung zu Ethereum-Node herstellen unter {RPC_URL}")
 
-# ABI des Notary-Vertrags laden (einmalig)
-abi_path = Config.CONTRACT_ABI_PATH
-if not os.path.isabs(abi_path):
-    base_dir = os.path.dirname(os.path.dirname(__file__))
-    abi_path = os.path.join(base_dir, abi_path)
+# Pfad zu deinem Hardhat-Artifact:
+# projectroot/contracts/artifacts/contracts/Notary.sol/Notary.json
+HERE = os.path.dirname(__file__)
+ARTIFACT_PATH = os.path.abspath(
+    os.path.join(
+        HERE,
+        '..',    # backend/app → backend
+        '..',    # backend → projectroot
+        'contracts',
+        'artifacts',
+        'contracts',
+        'Notary.sol',
+        'Notary.json'
+    )
+)
 
-with open(abi_path, 'r') as f:
-    artifact = json.load(f)
-    NOTARY_ABI = artifact.get("abi", artifact)
+def get_notary_contract_for_org(org_or_address):
+    if isinstance(org_or_address, Organization):
+        ca = org_or_address.contract_address
+    else:
+        ca = org_or_address
 
-# Default-Sender (Hardhat unlocked account)
-default_sender_account = w3.eth.accounts[2]
+    if not ca:
+        raise RuntimeError("Kein Contract hinterlegt für diese Organisation")
 
-def get_notary_contract_for_address(address: str):
-    """
-    Gibt eine Contract-Instanz des Notary-Vertrags für die gegebene Adresse zurück.
-    Wirft einen Fehler, wenn keine Adresse übergeben wird.
-    """
-    if not address:
-        raise ValueError("Keine Smart-Contract-Adresse für die Organisation gesetzt")
-    checksum = Web3.to_checksum_address(address)
-    return w3.eth.contract(address=checksum, abi=NOTARY_ABI)
-
-def get_notary_contract_for_org(org):
-    """
-    Gibt die Contract-Instanz für die angegebene Organisation zurück.
-    """
-    return get_notary_contract_for_address(org.contract_address)
-
-def get_user_org_address(user):
-    """
-    Liefert die on-chain Wallet-Adresse der Organisation, der der gegebene User zugeordnet ist.
-    """
-    org = Organization.query.get(user.organization_id)
-    if not org or not org.chain_address:
-        raise ValueError("Organisation hat keine chain_address hinterlegt")
-    return org.chain_address
+    checksum_addr = Web3.to_checksum_address(ca)
+    return w3.eth.contract(address=checksum_addr, abi=NOTARY_ABI)

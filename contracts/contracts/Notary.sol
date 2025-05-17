@@ -1,54 +1,51 @@
-// contracts/Notary.sol
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.28;
 
 contract Notary {
-    address public orgWallet;
+    address public immutable owner;
     mapping(address => bool) public orgAdmins;
-    mapping(bytes32 => bytes32) public originalHash;
-    mapping(bytes32 => uint256) public timestamps;
-    mapping(bytes32 => uint256) public fileTimestamps;
 
+    // Neu: Event für Notarisierung
     event DocumentNotarized(
-        address indexed org,
         bytes32 indexed idHash,
         bytes32 indexed documentHash,
         uint256 timestamp
     );
+    event AdminAdded(address indexed admin);
+    event AdminRemoved(address indexed admin);
 
-    modifier onlyOrgAdminOrWallet() {
-        require(msg.sender == orgWallet || orgAdmins[msg.sender], "Nicht Org-Admin");
-        _;
+    modifier onlyOwner() { require(msg.sender == owner, "Owner only"); _; }
+    modifier onlyAdmin() { require(orgAdmins[msg.sender], "Admin only"); _; }
+
+    constructor(address _owner) {
+        require(_owner != address(0), "owner = 0");
+        owner = _owner;
+        orgAdmins[_owner] = true;
     }
 
-    constructor(address _orgWallet) {
-        require(_orgWallet != address(0), "Ungueltige Org-Adresse");
-        orgWallet = _orgWallet;
-    }
-
-    function addOrgAdmin(address admin) external onlyOrgAdminOrWallet {
-        require(admin != address(0), "Ungueltige Adresse");
+    function addOrgAdmin(address admin) external onlyOwner {
+        require(!orgAdmins[admin], "exists");
         orgAdmins[admin] = true;
+        emit AdminAdded(admin);
     }
 
-    function storeDocumentHash(bytes32 idHash, bytes32 documentHash)
-        external onlyOrgAdminOrWallet
-    {
-        require(timestamps[idHash] == 0, "Schon notariell hinterlegt");
-        bytes32 orig = originalHash[idHash];
-        require(orig == bytes32(0) || orig == documentHash, "Dokument geaendert");
-        originalHash[idHash] = documentHash;
-        timestamps[idHash] = block.timestamp;
-        fileTimestamps[documentHash] = block.timestamp;
-        emit DocumentNotarized(orgWallet, idHash, documentHash, block.timestamp);
+    function removeOrgAdmin(address admin) external onlyOwner {
+        require(admin != owner, "cannot remove owner");
+        require(orgAdmins[admin], "not admin");
+        orgAdmins[admin] = false;
+        emit AdminRemoved(admin);
     }
 
-    function getDocOrg(bytes32 idHash) external view returns (address) {
-        if (timestamps[idHash] != 0) return orgWallet;
-        return address(0);
+    mapping(bytes32 => bool) public notarized;
+
+    // Neu: notarize inklusive idHash & Event-Emit
+    function notarize(bytes32 idHash, bytes32 documentHash) external onlyAdmin {
+        require(!notarized[documentHash], "already");
+        notarized[documentHash] = true;
+        emit DocumentNotarized(idHash, documentHash, block.timestamp);
     }
 
-    function verify(bytes32 documentHash) external view returns (bool) {
-        return fileTimestamps[documentHash] != 0;
+    function isNotarized(bytes32 documentHash) external view returns (bool) {
+        return notarized[documentHash];
     }
 }

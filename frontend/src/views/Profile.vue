@@ -1,113 +1,129 @@
 <template>
-  <div class="main-layout" v-if="user">
-  <div class="profile-container" v-if="user">
-    <h1>Profil</h1>
-
-    <div class="profile-info">
-      <p><strong>Mail:</strong> {{ user.email }}</p>
-      <p><strong>Organisation:</strong> {{ user.organization }}</p>
+  <div class="main-layout">
+    <div v-if="loadingUser">
+      <p>Lade Benutzerdaten...</p>
     </div>
-    <div class="otp-toggle">
-    <span><strong>Activate 2FA:</strong></span>
-    <label class="switch">
-      <input type="checkbox" v-model="otpEnabled" @change="toggleOTP">
-      <span class="slider round"></span>
-    </label>
-  </div>
-  <div v-if="otpQRCodeUrl" class="qr-code-section">
-  <p>Scanne diesen QR-Code mit deiner Authenticator-App:</p>
-  <img :src="otpQRCodeUrl" alt="QR-Code zur 2FA-Aktivierung" class="qr-code-image" />
-</div>
+    <div v-else class="profile-container">
+      <h1>Profil</h1>
 
-    <div class="profile-actions">
-      <button class="change-password-btn" @click="changePassword">Passwort ändern</button>
-   
+      <div class="profile-info">
+        <p><strong>Mail:</strong> {{ user.email }}</p>
+        <p><strong>Organisation:</strong> {{ user.organization }}</p>
+        <p><strong>Wallet Address:</strong> {{ user.walletAddress }}</p>
+        <p><strong>Owner:</strong> {{ user.isOwner }}</p>
+      </div>
+
+      <div class="otp-toggle">
+        <span><strong>Activate 2FA:</strong></span>
+        <label class="switch">
+          <input type="checkbox" v-model="otpEnabled" @change="toggleOTP">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div v-if="otpQRCodeUrl" class="qr-code-section">
+        <p>Scanne diesen QR-Code mit deiner Authenticator-App:</p>
+        <img :src="otpQRCodeUrl" alt="QR-Code zur 2FA-Aktivierung" class="qr-code-image" />
+      </div>
+
+      <h2>Deine Aktivitäten</h2>
+      <div v-if="activities.length">
+        <table class="activity-table">
+          <thead>
+            <tr>
+              <th>Block</th>
+              <th>Zeitpunkt</th>
+              <th>Tx Hash</th>
+              <th>Dokumentenhash</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="act in activities" :key="act.txHash">
+              <td>{{ act.blockNumber }}</td>
+              <td>{{ formatTimestamp(act.timestamp) }}</td>
+              <td>{{ shortenHash(act.txHash) }}</td>
+              <td>{{ shortenHash(act.documentHash) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else>Du hast noch keine Aktivitäten durchgeführt.</p>
     </div>
-
-    <h2>Deine Aktivitäten</h2>
-    <p>Du hast noch keine Aktivitäten durchgeführt.</p>
   </div>
-  <div v-else>
-    <p>Lade Benutzerdaten...</p>
-
-  </div>
-</div>
-
 </template>
+
 <script>
+import api from '@/api'
+
 export default {
   data() {
     return {
       user: null,
+      loadingUser: true,
       otpEnabled: false,
       otpQRCodeUrl: null,
-    };
+      activities: []
+    }
   },
-  mounted() {
-    this.fetchUserData();
+  async mounted() {
+    await this.fetchUserData()
+    await this.fetchActivities()
   },
   methods: {
     async fetchUserData() {
       try {
-        const response = await fetch("http://localhost:5001/user/profile", {
-          method: "GET",
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          this.user = data;
-          this.otpEnabled = data["2faEnabled"]; // ⬅️ Diese Zeile war vorher gefehlt!
-        } else {
-          console.error("Fehler beim Abrufen der Benutzerdaten");
+        const { data } = await api.get('/user/profile')
+        this.user = {
+          email:          data.email,
+          organization:   data.organization_name || data.organization,
+          walletAddress:  data.wallet_address,
+          isOwner:        data.is_owner
         }
+        this.otpEnabled = data['2faEnabled']
       } catch (error) {
-        console.error("Fehler:", error);
+        console.error('Fehler beim Abrufen der Benutzerdaten:', error)
+      } finally {
+        this.loadingUser = false
       }
-    },
-    editProfile() {
-      // TODO
-    },
-    changePassword() {
-      // TODO
     },
     async toggleOTP() {
-      console.log("Toggle OTP wird ausgelöst");
-
       try {
-        const response = await fetch("http://localhost:5001/user/2fa", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ enable: this.otpEnabled }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Antwort vom Backend:", data);
-
-          if (this.otpEnabled && data.qr_code_png_base64) {
-            this.otpQRCodeUrl = `data:image/png;base64,${data.qr_code_png_base64}`;
-          } else {
-            this.otpQRCodeUrl = null;
-          }
-
-          alert(`2FA wurde ${this.otpEnabled ? "aktiviert" : "deaktiviert"}.`);
+        const { data } = await api.post('/user/2fa', { enable: this.otpEnabled })
+        if (this.otpEnabled && data.qr_code_png_base64) {
+          this.otpQRCodeUrl = `data:image/png;base64,${data.qr_code_png_base64}`
         } else {
-          alert("Fehler beim Ändern des 2FA-Status");
-          this.otpEnabled = !this.otpEnabled;
+          this.otpQRCodeUrl = null
         }
+        alert(`2FA wurde ${this.otpEnabled ? 'aktiviert' : 'deaktiviert'}.`)
       } catch (error) {
-        console.error("Fehler:", error);
-        this.otpEnabled = !this.otpEnabled;
+        console.error('Fehler beim Ändern des 2FA-Status:', error)
+        this.otpEnabled = !this.otpEnabled
+        alert('Fehler beim Ändern des 2FA-Status.')
       }
     },
-  },
-};
+    async fetchActivities() {
+      try {
+        const { data } = await api.get('/users/me/activities')
+        this.activities = data.activities || []
+      } catch (error) {
+        console.error('Fehler beim Laden der Aktivitäten:', error)
+      }
+    },
+    formatTimestamp(ts) {
+      return new Date(ts * 1000).toLocaleString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+    },
+    shortenHash(hash) {
+      return hash.slice(0, 6) + '…' + hash.slice(-4)
+    }
+  }
+}
 </script>
-
-
 
 <style scoped>
 .main-layout {

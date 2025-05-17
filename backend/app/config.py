@@ -6,8 +6,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # Lokaler Hardhat RPC
-    RPC_URL = os.getenv("RPC_URL", "http://127.0.0.1:8545")
 
     # Pfad zum ABI des Notary-Vertrags
     CONTRACT_ABI_PATH = os.getenv(

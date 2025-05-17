@@ -22,6 +22,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/admin',
+    component: () => import('@/views/AdminPanel.vue'),
+    meta: { requiresAuth: true, requiresOwner: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/login'
   }
@@ -32,15 +37,21 @@ const router = createRouter({
   routes
 })
 
-// Globaler Guard: blockiert geschützte Routen
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+  const isOwner    = localStorage.getItem('isOwner')    === 'true'
+
   if (to.meta.requiresAuth && !isLoggedIn) {
-    // nicht authentifiziert → Login mit optionalem Redirect
-    next({ path: '/login', query: { redirect: to.fullPath } })
-  } else {
-    next()
+    return next({ path: '/login', query: { redirect: to.fullPath } })
   }
+
+  if (to.meta.requiresOwner && !isOwner) {
+    return next('/403')       // oder '/403'
+  }
+
+  next()
 })
+
+
 
 export default router

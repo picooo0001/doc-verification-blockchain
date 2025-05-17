@@ -6,9 +6,6 @@ import pyotp
 import qrcode
 import io
 import base64
-
-# neue Imports
-import os, binascii
 from .web3utils import w3
 from eth_account.messages import encode_defunct
 from hexbytes import HexBytes
@@ -21,9 +18,10 @@ def logout():
     logout_user()
     return jsonify({"message": "Logout erfolgreich"}), 200
 
+# Normale Login Routen (Email + PW + (OTP))
+
 @bp.route("/login", methods=["POST"])
 def login():
-    # 1) Payload lesen (Form-Data oder JSON)
     if request.is_json:
         data     = request.get_json()
         email    = data.get("email")
@@ -34,23 +32,27 @@ def login():
         password = request.form.get("password")
         otp      = request.form.get("otp")
 
-    # 2) Benutzer & Passwort prüfen
     user = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
         return jsonify({"error": "Ungültige E-Mail oder Passwort"}), 401
 
-    # 3) 2FA-Flow: fehlt otp?
     if user.otp_secret:
         if not otp:
-            # kein OTP im Request → OTP erforderlich
             return jsonify({"error": "2FA erforderlich"}), 401
         if not user.verify_otp(otp):
-            # falsches OTP
             return jsonify({"error": "Ungültiges OTP"}), 401
 
-    # 4) alles ok → Login
     login_user(user)
-    return jsonify({"message": "Login erfolgreich"}), 200
+    return jsonify({
+        "message": "Login erfolgreich",
+        "user": {
+            "id":       user.id,
+            "email":    user.email,
+            "isOwner":  user.is_owner,
+            "organizationId": user.organization_id,
+            "wallet":   user.wallet_address 
+        }
+    }), 200
 
 @bp.route("/setup-2fa", methods=["GET"])
 @login_required
@@ -61,24 +63,20 @@ def setup_2fa():
     """
     user = current_user
 
-    # 1) Neues OTP-Secret nur generieren, wenn noch keines vorhanden ist
     if not user.otp_secret:
         user.generate_otp_secret()
         db.session.commit()
 
-    # 2) Provisioning-URI nach RFC6238 für den Authenticator erstellen
     uri = pyotp.TOTP(user.otp_secret).provisioning_uri(
         name=user.email,
         issuer_name="DocNotary"
     )
 
-    # 3) QR-Code für die Provisioning-URI erzeugen
     qr = qrcode.QRCode(box_size=10, border=4)
     qr.add_data(uri)
     qr.make(fit=True)
     img = qr.make_image(fill="black", back_color="white")
 
-    # 4) QR-Code in PNG konvertieren und als Base64 kodieren
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     qr_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
@@ -87,18 +85,6 @@ def setup_2fa():
         "otp_secret": user.otp_secret,
         "provisioning_uri": uri,
         "qr_code_png_base64": qr_b64
-    }), 200
-
-@bp.route("/user/profile", methods=["GET"])
-@login_required
-def user_profile():
-    wallet = current_user.wallet_address
-    return jsonify({
-        "email": current_user.email,
-        "organization": current_user.organization.name,
-        "2faEnabled": bool(current_user.otp_secret),
-        "walletAddress": wallet if wallet else None,
-        "hasWallet": bool(wallet)
     }), 200
 
 @bp.route("/user/2fa", methods=["POST"])
@@ -115,18 +101,15 @@ def update_2fa():
     user = current_user
 
     if enable:
-        # 2FA aktivieren: Secret generieren, wenn noch keines existiert
         if not user.otp_secret:
             user.generate_otp_secret()
             db.session.commit()
 
-        # Provisioning-URI erstellen
         uri = pyotp.TOTP(user.otp_secret).provisioning_uri(
             name=user.email,
             issuer_name="DocNotary"
         )
 
-        # QR-Code erzeugen und als Base64 kodieren
         qr = qrcode.QRCode(box_size=10, border=4)
         qr.add_data(uri)
         qr.make(fit=True)
@@ -143,20 +126,17 @@ def update_2fa():
         }), 200
 
     else:
-        # 2FA deaktivieren: Secret entfernen
         user.otp_secret = None
         db.session.commit()
         return jsonify({"message": "2FA deaktiviert"}), 200
     
-# neue Login Route für Wallet based Logn
-
+# Wallet Login:
+    
 @bp.route("/login/nonce", methods=["GET"])
 def get_nonce():
     raw = request.args.get("address", "")
-    # 1) Gültige Ethereum-Adresse?
     if not w3.is_address(raw):
         return jsonify({"error": "Ungültige Adresse"}), 400
-    # 2) Checksummen-Format
     try:
         address = w3.to_checksum_address(raw)
     except ValueError:
@@ -166,7 +146,6 @@ def get_nonce():
     if not user:
         return jsonify({"error": "Adresse nicht registriert"}), 404
 
-    # 3) Nonce erzeugen und speichern
     import os, binascii
     nonce = binascii.hexlify(os.urandom(16)).decode()
     user.login_nonce = nonce
@@ -180,7 +159,6 @@ def login_wallet():
     raw       = data.get("address", "")
     signature = data.get("signature")
 
-    # 1) Adresse validieren & normalisieren
     if not w3.is_address(raw):
         return jsonify({"error": "Ungültige Adresse"}), 400
     try:
@@ -188,12 +166,10 @@ def login_wallet():
     except ValueError:
         return jsonify({"error": "Ungültiges Adress-Format"}), 400
 
-    # 2) User + Nonce prüfen
     user = User.query.filter_by(wallet_address=address).first()
     if not user or not user.login_nonce:
         return jsonify({"error": "Nonce nicht gefunden"}), 401
 
-    # 3) Signatur prüfen
     message = encode_defunct(text=user.login_nonce)
     try:
         recovered = w3.eth.account.recover_message(message, signature=HexBytes(signature))
@@ -203,16 +179,30 @@ def login_wallet():
     if recovered != address:
         return jsonify({"error": "Address mismatch"}), 401
 
-    # 4) Login abschließen
     user.login_nonce = None
     db.session.commit()
     login_user(user)
-    return jsonify({"message": "Login erfolgreich"}), 200
+    
+    return jsonify({
+        "message": "Login erfolgreich",
+        "user": {
+            "id":       user.id,
+            "email":    user.email,
+            "isOwner":  user.is_owner,
+            "organizationId": user.organization_id,
+            "wallet":   user.wallet_address
+        }
+    }), 200
 
-@bp.route("/org/allowed-addresses", methods=["GET"])
+#User Profile fetching:
+@bp.route("/user/profile", methods=["GET"])
 @login_required
-def get_allowed_addresses():
-    # Liefert alle wallet addresses der Nutzer der eigenen Organisation
-    org = Organization.query.get(current_user.organization_id)
-    addresses = [u.wallet_address for u in org.users if u.wallet_address]
-    return jsonify({"allowedAddresses": addresses}), 200
+def user_profile():
+    wallet = current_user.wallet_address
+    return jsonify({
+        "email": current_user.email,
+        "organization": current_user.organization.name,
+        "2faEnabled": bool(current_user.otp_secret),
+        "walletAddress": wallet if wallet else None,
+        "isOwner": bool(current_user.is_owner)
+    }), 200
