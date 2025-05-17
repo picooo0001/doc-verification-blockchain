@@ -14,7 +14,7 @@ der Blockchain zu verknüpfen.</p>
           <input type="file" accept="application/pdf" multiple @change="handleFileUpload" />
 
           <div v-if="pdfFiles.length > 0" class="mt-4">
-            <p><strong>Vorschau:</strong> {{ pdfFiles[0].name }}</p>
+            <p><strong>Vorschau:</strong> </p>
             <iframe :src="pdfUrls[0]" width="100%" height="300px"></iframe>
           </div>
         </div>
@@ -53,43 +53,47 @@ hinterlegt ist.</p>
     <!-- Dashboard -->
     <div class="dashboard-container">
       <div class="center-content">
-        <h1>📊 Dashboard</h1>
+        <h1>Dashboard</h1>
       </div>
       <p>Statistiken über signierte und überprüfte Dokumente erscheinen hier.</p>
       
       <!-- Statistiken -->
       <div v-if="stats && !stats.error" class="stats">
         <p>
-          <strong>🔗 Contract-Adresse:</strong>
+          <strong>Contract-Adress:</strong>
           <a
             :href="`https://sepolia.etherscan.io/address/${stats.contractAddress}`"
             target="_blank"
-            class="text-blue-600 underline"
+            class="my-wallet-style"
           >{{ stats.contractAddress }}</a>
         </p>
         <p v-if="stats.contractCreator">
-          <strong>👤 Contract-Creator:</strong>
+          <strong>Contract-Creator:</strong>
           <a
             :href="`https://sepolia.etherscan.io/address/${stats.contractCreator}`"
             target="_blank"
-            class="text-blue-600 underline"
+            class="my-wallet-style"
           >{{ stats.contractCreator }}</a>
         </p>
-        <p><strong>📦 Deploy-Block:</strong> {{ stats.deployBlock }}</p>
-        <p><strong>🧾 Gesamtzahl der Notarisierungen:</strong> {{ stats.totalNotarizations }}</p>
+        <p><strong>Deploy-Block:</strong> {{ stats.deployBlock }}</p>
+        <p><strong>Notarization-Count:</strong> {{ stats.totalNotarizations }}</p>
         <p>
-          <strong>🏁 Erste Notarisierung:</strong> {{ stats.firstDate }}
-          <code class="ml-2">{{ stats.firstHash }}</code>
+          <strong>First Notarization:</strong> {{ stats.firstDate }}
+          <br>
+          <strong>with Hash:</strong>
+          <code class="first-notarization">{{ stats.firstHash }}</code>
         </p>
         <p>
-          <strong>🏁 Letzte Notarisierung:</strong> {{ stats.latestDate }}
+          <strong>Last Notarization:</strong> {{ stats.latestDate }}
+          <br>
+          <strong>with Hash:</strong>
           <code class="ml-2">{{ stats.latestHash }}</code>
         </p>
       </div>
 
       <!-- Notarisierungshistorie -->
       <div v-if="documents && documents.length > 0" class="history">
-        <h2>🕓 Notarisierungshistorie</h2>
+        <h2>Notarisierungshistorie</h2>
         <table>
           <thead>
             <tr>
@@ -97,7 +101,7 @@ hinterlegt ist.</p>
               <th>Zeitpunkt</th>
               <th>Tx Hash</th>
               <th>Dokumentenhash</th>
-              <th>Herunterladen</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -109,7 +113,7 @@ hinterlegt ist.</p>
               <!-- hier documentHash -->
               <td>{{ shortenHash(doc.documentHash) }}</td>
               <td>
-                <a :href="`http://localhost:5001${doc.downloadUrl}`" target="_blank">
+                <a :href="`http://localhost:5001${doc.downloadUrl}`" target="_blank" class="trial-btn2">
                   Download
                 </a>
               </td>
@@ -186,7 +190,7 @@ async function loadDocuments() {
       }))
   } catch (e) {
     console.error('Dokument-Fehler:', e)
-    toast.error('Konnte Dokumentliste nicht laden.')
+    toast.error('Fehler beim Laden der Dokumente.')
   }
 }
 
@@ -336,7 +340,7 @@ async function submitToBackend() {
   } catch (simErr) {
     console.error('Simulation reverted:', simErr)
     const reason = simErr.reason || simErr.data || simErr.message
-    toast.error(`Vorab-Simulation fehlgeschlagen: ${reason}`)
+    toast.error(`Signed ${reason}!`)
     return
   }
 
@@ -647,4 +651,66 @@ td {
   text-decoration: underline;
   cursor: pointer;
 }
+
+.trial-btn2 {
+  background: #1a1726;
+  color: #fff;
+  border: 1px solid transparent; /* dünnerer Rahmen */
+  border-radius: 5px;             /* weniger Rundung */
+  padding: 0.3rem 0.8rem;         /* kleinerer Innenabstand */
+  font-size: 0.9rem;              /* kleinere Schrift */
+  font-weight: 700;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+    "Helvetica Neue", Arial, sans-serif;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+  box-shadow: none;
+  outline: none;
+  display: inline-block;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+}
+
+
+.trial-btn2:hover,
+.trial-btn2:focus {
+  background: #ffffff;        /* weißer Hintergrund */
+  color: #000000;             /* schwarze Schrift */
+  border: 2px solid #000000;  /* schwarzer Rand */
+  transform: translateY(-2px) scale(1.03);
+}
+.my-wallet-style {
+  background-color: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  min-width: 300px;
+  color: #000000; /* Schriftfarbe schwarz */
+  text-decoration: none;
+  outline: none; /* Entfernt den Standard-Fokus-Rahmen */
+  border: none; /* Falls ein Rahmen angezeigt wird */
+}
+
+.my-wallet-style:focus,
+.my-wallet-style:active {
+  color: #000000;      /* Schriftfarbe bleibt schwarz */
+  background-color: #f0f0f0; /* Hintergrund bleibt gleich */
+  outline: none;       /* Kein Fokus-Rahmen */
+  text-decoration: none;
+  border: none;
+
+  
+}
+
+.first-notarization-content {
+  background-color: #e0e0e0;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  text-align: left;
+}
+.first-notarization-content p {
+  margin: 0.2rem 0;
+}
+
+
 </style>

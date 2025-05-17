@@ -39,18 +39,22 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-  const isOwner    = localStorage.getItem('isOwner')    === 'true'
+  const isOwner    = localStorage.getItem('isOwner') === 'true'
 
+  console.log('isLoggedIn:', isLoggedIn)
+  console.log('isOwner:', isOwner)
+  
   if (to.meta.requiresAuth && !isLoggedIn) {
     return next({ path: '/login', query: { redirect: to.fullPath } })
   }
 
   if (to.meta.requiresOwner && !isOwner) {
-    return next('/403')       // oder '/403'
+    return next('/403')
   }
 
   next()
 })
+
 
 
 

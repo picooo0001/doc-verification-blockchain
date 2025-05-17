@@ -31,7 +31,7 @@
       <li>Ethereum Testnetz (z. B. Sepolia)</li>
       <li>Smart Contracts in Solidity</li>
       <li>IPFS zur optionalen dezentralen Dateiablage</li>
-      <li>Node.js + Express im Backend</li>
+      <li>Flask + Python im Backend</li>
       <li>Vue 3 mit PrimeVue im Frontend</li>
     </ul>
 

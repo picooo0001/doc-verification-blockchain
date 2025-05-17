@@ -7,19 +7,45 @@
       <h1>Profil</h1>
 
       <div class="profile-info">
-        <p><strong>Mail:</strong> {{ user.email }}</p>
-        <p><strong>Organisation:</strong> {{ user.organization }}</p>
-        <p><strong>Wallet Address:</strong> {{ user.walletAddress }}</p>
-        <p><strong>Owner:</strong> {{ user.isOwner }}</p>
-      </div>
+<p>
+  <span class="label">Mail:</span>
+  <span class="value"><span class="my-wallet-style1">{{ user.email }}</span></span>
+</p>
+<p>
+  <span class="label">Organisation:</span>
+  <span class="value"><span class="my-wallet-style2">{{ user.organization }}</span></span>
+</p>
+<p>
+  <span class="label">Wallet Address:</span>
+  <span class="value" style="display: inline-flex; align-items: center; gap: 6px;">
+    <span class="my-wallet-style">{{ user.walletAddress }}</span>
+    <button
+      @click="copyToClipboard"
+      style="background: none; border: none; padding: 0; cursor: pointer;"
+      title="Adresse kopieren"
+      aria-label="Adresse kopieren"
+    >
+      <img src="../assets/copy.svg" alt="Copy Icon" style="width: 20px; height: 20px;" />
+    </button>
+  </span>
+</p>
+<p>
+  <span class="label">Owner:</span>
+  <span class="value"><span class="my-wallet-style3">{{ user.isOwner ? 'True' : 'False' }}</span></span>
+</p>
 
-      <div class="otp-toggle">
-        <span><strong>Activate 2FA:</strong></span>
-        <label class="switch">
-          <input type="checkbox" v-model="otpEnabled" @change="toggleOTP">
-          <span class="slider round"></span>
-        </label>
-      </div>
+  <p>
+    <span class="label">2FA aktivieren:</span>
+    <span class="value">
+      <label class="switch">
+        <input type="checkbox" v-model="otpEnabled" @change="toggleOTP">
+        <span class="slider round"></span>
+      </label>
+    </span>
+  </p>
+</div>
+
+
       <div v-if="otpQRCodeUrl" class="qr-code-section">
         <p>Scanne diesen QR-Code mit deiner Authenticator-App:</p>
         <img :src="otpQRCodeUrl" alt="QR-Code zur 2FA-Aktivierung" class="qr-code-image" />
@@ -53,6 +79,9 @@
 
 <script>
 import api from '@/api'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
 
 export default {
   data() {
@@ -69,22 +98,37 @@ export default {
     await this.fetchActivities()
   },
   methods: {
+    copyToClipboard() {
+    if (!this.user || !this.user.walletAddress) return;
+
+    navigator.clipboard.writeText(this.user.walletAddress)
+      .then(() => {
+        toast.success('Copied to Clipboard!');  // Toast success
+      })
+      .catch(err => {
+        toast.error('Fehler beim Kopieren der Adresse'); // Toast error
+        console.error('Copy error:', err);
+      });
+  },
     async fetchUserData() {
-      try {
-        const { data } = await api.get('/user/profile')
-        this.user = {
-          email:          data.email,
-          organization:   data.organization_name || data.organization,
-          walletAddress:  data.wallet_address,
-          isOwner:        data.is_owner
-        }
-        this.otpEnabled = data['2faEnabled']
-      } catch (error) {
-        console.error('Fehler beim Abrufen der Benutzerdaten:', error)
-      } finally {
-        this.loadingUser = false
-      }
-    },
+  try {
+    const { data } = await api.get('/user/profile')
+    console.log('User data:', data)  // zur Kontrolle
+
+    this.user = {
+      email:          data.email,
+      organization:   data.organization_name || data.organization,
+      walletAddress:  data.walletAddress || data.wallet_address,  // falls API mal snake_case liefert
+      isOwner:        data.isOwner  // <-- genau so, nicht data.is_owner
+    }
+    this.otpEnabled = data['2faEnabled']
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Benutzerdaten:', error)
+  } finally {
+    this.loadingUser = false
+  }
+}
+,
     async toggleOTP() {
       try {
         const { data } = await api.post('/user/2fa', { enable: this.otpEnabled })
@@ -135,12 +179,12 @@ export default {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 .profile-container {
-  max-width: 1200px;
+  min-width: 50%;
+  max-width: 100%;
   border-radius: 6px; /* wie der Button im Screenshot */
   margin: 2rem auto;
   padding: 2rem;
   background-color: rgba(255, 255, 255, 0.95);
-  
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
@@ -233,9 +277,22 @@ input:checked + .slider:before {
 }
 
 .otp-toggle {
-  display: flex;
+  display: grid;
+  grid-template-columns: 150px 1fr; /* gleiche Struktur wie .profile-info p */
+  column-gap: 1rem;
   align-items: center;
-  gap: 0.5rem;
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+}
+
+.otp-toggle .label {
+  font-weight: bold;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.otp-toggle .value {
+  text-align: left;
 }
 
 .qr-code-section {
@@ -272,5 +329,86 @@ input:checked + .slider:before {
   border: 2px solid #000000;  /* schwarzer Rand */
   transform: translateY(-2px) scale(1.03);
 }
+.profile-info p {
+  display: grid;
+grid-template-columns: 150px auto;
+  column-gap: 1rem;
+  align-items: center;
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+}
+
+.profile-info .label {
+  font-weight: bold;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.profile-info .value {
+  text-align: left;
+  word-break: break-word;
+  display: inline-flex; /* <- neu: damit Inhalt nur so breit wie nötig */
+}
+
+
+.profile-container h1,
+.profile-container h2 {
+  text-align: center;
+}
+
+.profile-info {
+  width: 100%;
+  max-width: 600px; /* optional, für bessere Lesbarkeit */
+  margin: 0 auto;   /* zentriert das Info-Grid */
+}
+
+.my-wallet-style {
+  display: inline-block; /* inline-block gibt dir mehr Styling-Kontrolle */
+  max-width: max-content; /* damit nicht breiter als Text */
+  white-space: nowrap;    /* kein Zeilenumbruch */
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #000000;
+}
+
+.my-wallet-style1 {
+  display: inline-block; /* inline-block gibt dir mehr Styling-Kontrolle */
+  max-width: max-content; /* damit nicht breiter als Text */
+  white-space: nowrap;    /* kein Zeilenumbruch */
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #000000;
+}
+
+.my-wallet-style2 {
+  display: inline-block; /* inline-block gibt dir mehr Styling-Kontrolle */
+  max-width: max-content; /* damit nicht breiter als Text */
+  white-space: nowrap;    /* kein Zeilenumbruch */
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #000000;
+}
+
+.my-wallet-style3 {
+  display: inline-block; /* inline-block gibt dir mehr Styling-Kontrolle */
+  max-width: max-content; /* damit nicht breiter als Text */
+  white-space: nowrap;    /* kein Zeilenumbruch */
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #000000;
+}
+
 
 </style>

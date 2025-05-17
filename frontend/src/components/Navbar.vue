@@ -1,33 +1,44 @@
+
 <template>
   <header class="navbar">
     <div class="navbar-content">
-      <RouterLink to="/" class="logo" aria-label="Zur Startseite">
-        <img :src="logoSrc" alt="App Logo" />
+      <RouterLink to="/about" class="logo" aria-label="Zur Startseite">
+        <img :src="logoOrg" alt="App Logo" />
       </RouterLink>
 
       <nav class="nav-links" aria-label="Hauptnavigation">
         <RouterLink to="/sign-pdf" class="nav-item" @click="closeMenu">Dashboard</RouterLink>
         <RouterLink to="/about" class="nav-item" @click="closeMenu">About</RouterLink>
+        <RouterLink to="/slides" class="nav-item" @click="closeMenu">Slides</RouterLink>
+<a href="#" class="nav-item" @click.prevent="handleAdminClick">Admin</a>
+            <RouterLink to="" class="nav-item" @click="closeMenu">Get started!</RouterLink>
+
       </nav>
 
-      <div class="actions">
-        <div v-if="isLoggedIn" class="profile-wrapper">
-          <button class="profile-btn" @click="toggleDropdown" :aria-expanded="showDropdown" aria-haspopup="true" ref="profileBtnRef">
-            <img src="../assets/profile.png" alt="Profil" />
-          </button>
-          <transition name="dropdown-slide">
-            <div v-if="showDropdown" class="dropdown" ref="dropdownRef">
-              <RouterLink to="/profile" class="dropdown-item" @click="closeMenu">
-                <i class="ri-user-line"></i> Konto
-              </RouterLink>
-              <a href="#" class="dropdown-item" @click.prevent="logout">
-                <i class="ri-logout-box-line"></i> Abmelden
-              </a>
-            </div>
-          </transition>
-        </div>
-        <RouterLink v-else to="/login" class="trial-btn">Sign in</RouterLink>
+    <div class="actions">
+  <!-- Lupe-Symbol -->
+  <button class="search-btn" @click="openSearch" aria-label="Suche">
+    <i class="ri-search-line"></i> <!-- Icon für die Lupe -->
+  </button>
+
+  <div v-if="isLoggedIn" class="profile-wrapper">
+    <button class="profile-btn" @click="toggleDropdown" :aria-expanded="showDropdown" aria-haspopup="true" ref="profileBtnRef">
+      <img src="../assets/profile.png" alt="Profil" />
+    </button>
+    <transition name="dropdown-slide">
+      <div v-if="showDropdown" class="dropdown" ref="dropdownRef">
+        <RouterLink to="/profile" class="dropdown-item" @click="closeMenu">
+          <i class="ri-user-line"></i> Konto
+        </RouterLink>
+        <a href="#" class="dropdown-item" @click.prevent="logout">
+          <i class="ri-logout-box-line"></i> Abmelden
+        </a>
       </div>
+    </transition>
+  </div>
+  <RouterLink v-else to="/login" class="trial-btn">Sign in</RouterLink>
+</div>
+
 
       <button
         class="menu-btn"
@@ -63,8 +74,13 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import logoSrc from '@/assets/logo.png'
-import profileSrc from '@/assets/profile.png'
+import logoOrg from '../assets/logo_orange.png'
+import profileSrc from '../assets/profile.png'
+import logoPink from '../assets/logo_pink.png'
+import { useToast } from 'vue-toastification' 
+
+const toast = useToast() 
+
 
 const isLoggedIn = ref(localStorage.getItem('isLoggedIn') === 'true')
 const showDropdown = ref(false)
@@ -103,7 +119,29 @@ function handleClickOutside(event) {
   ) {
     showDropdown.value = false
   }
+}function handleAdminClick() {
+  const isAdmin = localStorage.getItem('isOwner') === 'true'
+
+
+  if (!isAdmin) {
+    toast.warning('Du benötigst Adminrechte, um diesen Bereich zu betreten.', {
+      timeout: 3000,
+      position: 'bottom-right',
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      style: {
+        backgroundColor: '#ffa726',
+        color: 'black',
+      },
+    })
+    return // kein Routing!
+  }
+
+  // Admin ist erlaubt → navigieren
+  router.push('/admin')
 }
+
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
@@ -151,7 +189,7 @@ body {
   height: 68px;
 }
 .logo img {
-  height: 64px;
+  height: 135px;
   margin-right: 0.5rem; /* oder ganz weglassen */
 }
 
@@ -165,8 +203,8 @@ body {
 .nav-item,
 .login-btn,
 .dropdown-item {
-  color: #6c6c6c; /* vorher: #222 */
-  font-size: 1.08rem;
+  color: #5e5e5e; /* dunkelgrau */
+  font-size: 1.35rem; /* etwas größer */
   font-weight: 500;
   background: none;
   border: none;
@@ -180,12 +218,12 @@ body {
   position: relative;
 }
 
-.nav-item:focus,
 .nav-item:hover,
-.dropdown-item:focus,
-.dropdown-item:hover {
-  color: #111; /* vorher: #6c4ae2 */
-  background: #f5f5fa;
+.nav-item:focus,
+.dropdown-item:hover,
+.dropdown-item:focus {
+  color: #000 !important;  /* schwarz */
+  background: none !important; /* kein Hintergrund */
 }
 .login-btn {
   background: #222;
@@ -244,7 +282,7 @@ body {
   box-shadow: 0 8px 32px rgba(31,35,40,0.10);
   min-width: 170px;
   z-index: 200;
-  border-radius: 0.6rem;
+  border-radius: 6px;
   overflow: hidden;
   border: 1.5px solid #eaeaea;
 }
@@ -329,7 +367,7 @@ body {
 /* Überschreibt die Standardfarbe für aktive Router-Links */
 .router-link-active,
 .router-link-exact-active {
-  color: #6c6c6c !important; /* gleiche Farbe wie normaler Link */
+  color: #5e5e5e !important; /* gleiche Farbe wie normaler Link */
   background: none !important; /* kein Hintergrund */
 }
 
@@ -338,8 +376,8 @@ body {
 .nav-item:focus,
 .dropdown-item:hover,
 .dropdown-item:focus {
-  color: #111 !important;
-  background: #f5f5fa;
+  color: #111 !important; /* Schwarz bei Hover */
+  background: #f5f5fa; /* Heller Hintergrund */
 }
 
 
@@ -368,4 +406,33 @@ body {
   border: 2px solid #000000;  /* schwarzer Rand */
   transform: translateY(-2px) scale(1.03);
 }
+
+.search-btn {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.18s, color 0.18s;
+}
+
+.search-btn i {
+  font-size: 1.4rem;
+  color: #5e5e5e;
+}
+
+.search-btn:hover,
+.search-btn:focus {
+  background:none;
+  color: #6c4ae2;
+}
+
+.search-btn:focus i,
+.search-btn:hover i {
+  color: #222;
+}
+
 </style>

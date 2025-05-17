@@ -68,8 +68,11 @@ async function login() {
     const { data } = await api.post('/login', payload)
 
     // Erfolg – User‑Info im data-Objekt
-    const user    = data.user || {}
-    const isOwner = Boolean(user.isOwner)
+    const user = data.user || {}
+console.log('Login-Response User:', user)  // 👈 DAS EINBAUEN
+
+const isOwner = Boolean(user.isOwner)
+console.log('isOwner (berechnet):', isOwner)
 
     localStorage.setItem('isLoggedIn',   'true')
     localStorage.setItem('isOwner',      String(isOwner))

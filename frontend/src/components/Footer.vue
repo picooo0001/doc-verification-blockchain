@@ -1,3 +1,4 @@
+
 <template>
 <footer class="footer-wrapper">
   <div class="footer-new">
