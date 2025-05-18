@@ -346,7 +346,7 @@ async function deployContract() {
 }
 
 .admin-panel {
-  width: 55%;
+  width: 70%;
   max-width: 2000px; /* vorher 1800px → jetzt realistischer breiter */
   margin: 1rem auto;
   padding: 1rem;

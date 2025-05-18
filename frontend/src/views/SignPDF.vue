@@ -55,7 +55,6 @@ hinterlegt ist.</p>
       <div class="center-content">
         <h1>Dashboard</h1>
       </div>
-      <p>Statistiken über signierte und überprüfte Dokumente erscheinen hier.</p>
       
       <!-- Statistiken -->
       <div v-if="stats && !stats.error" class="stats">
@@ -658,7 +657,7 @@ td {
   border: 1px solid transparent; /* dünnerer Rahmen */
   border-radius: 5px;             /* weniger Rundung */
   padding: 0.3rem 0.8rem;         /* kleinerer Innenabstand */
-  font-size: 0.9rem;              /* kleinere Schrift */
+  font-size: 0.7rem;              /* kleinere Schrift */
   font-weight: 700;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
     "Helvetica Neue", Arial, sans-serif;
@@ -674,7 +673,8 @@ td {
 
 .trial-btn2:hover,
 .trial-btn2:focus {
-  background: #ffffff;        /* weißer Hintergrund */
+  background: #ffffff;    
+  font-size: 0.7rem;    /* weißer Hintergrund */
   color: #000000;             /* schwarze Schrift */
   border: 2px solid #000000;  /* schwarzer Rand */
   transform: translateY(-2px) scale(1.03);
