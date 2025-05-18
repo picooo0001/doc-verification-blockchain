@@ -1,12 +1,15 @@
 # Dezentrale Notarisierung von Dokumenten
 
 ## 🚀 Projektziel
-Blockchain-basierte Verifikation und Notarisierung von Dokumenten.
+
+- Verifikation und Notarisierung von Dokumenten in einer dezentralen Blockchain (Sepolia).
+- Einfacher Login via Wallet oder Username/2FA.
+- Dokumentenupload und -verifikation direkt im Browser mit MetaMask.
 
 ## 📁 Ordnerstruktur
 
 * `contracts/`
-  Enthält die Solidity-Smart-Contracts, Deployment-Skripte und Unit-Tests. Hier definiert ihr den `Notary.sol`-Contract, testet ihn mit Hardhat und deployt ihn lokal.
+  Enthält den Solidity-Smart-Contracts und Unit-Tests, sowie die Hardhat Config für die Festlegung des Netzwerks.
 
 * `backend/`
   API-Server auf Basis von Python und Flask. In diesem Ordner findet ihr:
@@ -23,6 +26,7 @@ Blockchain-basierte Verifikation und Notarisierung von Dokumenten.
   * Benutzer-Login/2FA-Flow abgebildet
   * Dokumenten-Upload und Verifikation über MetaMask eingebunden
   * Statistiken und Dokumentenlisten angezeigt
+  * Admin Panel für das User und Contract Management
 
 * `docs/`
   Projekt-Dokumentation und Setup-Anleitungen:
@@ -32,18 +36,18 @@ Blockchain-basierte Verifikation und Notarisierung von Dokumenten.
   * Ausführlichere Dokumentation zu den verschiedenen Ordnern
 
 * `docker-compose.yml`
-  Richtet via Docker lediglich eine lokale PostgreSQL-Datenbank auf `localhost:5432` ein; diese wird aktuell nicht mehr verwendet, da die Datenbank nun extern gehostet wird.
+  Richtet via Docker gesamte Applikation ein.
 
 * `README.md`
   Überblick und schnelle Einstiegshilfe:
 
-  * Projektziel und Motivation
-  * Kurze Erläuterung der Ordnerstruktur (siehe oben)
+  * Projektziel
+  * Kurze Erläuterung der Ordnerstruktur
   * Installation und erste Schritte
-  * Verweise auf detaillierte Dokumente in `docs/`
+  * Git-Workflow
 
 * `.gitignore`
-  Listet Dateien und Ordner, die nicht versioniert werden sollen (z. B. `node_modules/`, `venv/`, lokale Konfigs).
+  Listet Dateien und Ordner, die nicht versioniert werden sollen (z. B. `node_modules/`, `venv/`, `.env`).
 
 ## 🔧 Setup (lokal)
 - siehe `docs/setup.md`
@@ -59,6 +63,8 @@ Blockchain-basierte Verifikation und Notarisierung von Dokumenten.
 - Gestashete Änderungen wieder holen `git stash pop`
 
 **Checken ob die Branch die Richtige ist!**
+
+Aktuelle Branch: `fetaure/sepolia-integration`
 
 ## 📄 Lizenz
 MIT

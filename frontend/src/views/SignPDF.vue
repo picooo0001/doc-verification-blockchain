@@ -379,7 +379,8 @@ async function submitToBackend() {
 
   // ───────────────────────────────────────
   // 7️⃣ Historie neu laden
-  await loadHistory(currentDocumentId.value)
+  await loadStats()
+  await loadDocuments()
 }
 
 function checkPdf(event) {
@@ -412,20 +413,6 @@ async function verifyPdf() {
     }
   }
 }
-
-async function loadHistory(documentId) {
-  if (!documentId) return
-  try {
-    // ruft alle Dokument-Events der Organisation ab
-    const { data } = await api.get('/documents')
-    // filtert nur den Eintrag mit genau dem idHash
-    history.value = data.documents.filter(doc => doc.idHash === documentId)
-  } catch (err) {
-    console.error('Fehler beim Laden der Dokument-Historie:', err)
-    toast.error('Dokument-Historie konnte nicht geladen werden.')
-  }
-}
-
 </script>
 
 <style>

@@ -10,7 +10,6 @@ venv/
 
 # Solidity / Hardhat / Truffle
 build/
-artifacts/
 cache/
 
 # IDE-Dateien
