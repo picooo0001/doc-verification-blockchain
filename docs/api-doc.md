@@ -1,219 +1,213 @@
-# API-Dokumentation
+# API Documentation
 
-**Base URL:**
-
-* Auth-Routes: `http://localhost:5001`
-* Notary-Routes: `http://localhost:5001/api`
+**Basis-URL:** `http://localhost:5001/api`
+Authentifizierung via Session-Cookie (Flask-Login) oder Wallet-Signatur.
 
 ---
 
-## Authentifizierung & Nutzer
-
-### POST `/login`
-
-Authentifiziert einen Benutzer per E-Mail/Passwort (Form-Data oder JSON).
-
-* **URL:** `/login`
-* **Methode:** `POST`
-* **Authentifizierung:** Keine (öffnet Session-Cookie)
-
-**Request Body (Form-Data oder JSON):**
-
-| Feld       | Typ    | Beschreibung                                 |
-| ---------- | ------ | -------------------------------------------- |
-| `email`    | String | E-Mail-Adresse des Benutzers                 |
-| `password` | String | Klartext-Passwort                            |
-| `otp`      | String | Einmal-Passwort (6-stellig), falls 2FA aktiv |
-
-JSON-Beispiel:
-
-```json
-{
-  "email": "alice@test.org",
-  "password": "Secret123",
-  "otp": "123456"   // optional, nur wenn 2FA eingerichtet
-}
-```
-
-**Erfolgs-Response (200 OK):**
-
-```json
-{ "message": "Login erfolgreich" }
-```
-
-**Fehler-Responses:**
-
-* **401 Unauthorized** – bei falscher E-Mail/Passwort oder fehlendem/ungültigem OTP:
-
-```json
-{ "error": "Ungültige E-Mail oder Passwort" }
-{ "error": "2FA erforderlich" }
-{ "error": "Ungültiges OTP" }
-```
-
----
+## Authentifizierung & Nutzerverwaltung
 
 ### GET `/login/nonce`
 
-Ermittelt einen Zufalls-Nonce für das Wallet-Login.
+Erzeugt eine einmalige Nonce für Wallet-Login.
 
 * **URL:** `/login/nonce?address={walletAddress}`
 * **Methode:** `GET`
-* **Parameter:** `address` (in Query-String, Ethereum-Adresse)
-* **Authentifizierung:** Keine
+* **Auth:** keine
+* **Query-Parameter:**
 
-**Erfolgs-Response (200 OK):**
+  * `address` (string): Ethereum-Adresse
 
-```json
-{ "nonce": "d4f2a9b1c3e5..." }
-```
+**Antworten:**
 
-**Fehler-Responses:**
+* **200 OK**
 
-* **400 Bad Request** – ungültige oder falsche Adressformat:
+  ```json
+  { "nonce": "d4f2a9b1c3e5..." }
+  ```
+* **400 Bad Request**
 
-```json
-{ "error": "Ungültige Adresse" }
-{ "error": "Ungültiges Adress-Format" }
-```
+  ```json
+  { "error": "Ungültige Adresse" }
+  { "error": "Ungültiges Adress-Format" }
+  ```
+* **404 Not Found**
 
-* **404 Not Found** – Adresse nicht in der Datenbank (nicht registriert):
-
-```json
-{ "error": "Adresse nicht registriert" }
-```
+  ```json
+  { "error": "Adresse nicht registriert" }
+  ```
 
 ---
 
 ### POST `/login/wallet`
 
-Loggt den Benutzer über Wallet-Signatur ein.
+Login per Ethereum-Wallet-Signatur.
 
 * **URL:** `/login/wallet`
 * **Methode:** `POST`
-* **Authentifizierung:** Keine
+* **Auth:** keine
+* **Body (JSON):**
 
-**Request Body (JSON):**
+  ```json
+  {
+    "address": "0xAbc123...def",
+    "signature": "0x5f3b..."
+  }
+  ```
 
-```json
-{
-  "address": "0xAbc123...def",   // Ethereum-Adresse des Nutzers
-  "signature": "0x5f3b..."       // Signatur des Nonce-Textes
-}
-```
+**Antworten:**
 
-**Erfolgs-Response (200 OK):**
+* **200 OK**
 
-```json
-{ "message": "Login erfolgreich" }
-```
+  ```json
+  {
+    "message": "Login erfolgreich",
+    "user": {
+      "id": 1,
+      "email": "alice@test.org",
+      "isOwner": false,
+      "organizationId": 42,
+      "wallet": "0xAbc123...def"
+    }
+  }
+  ```
+* **400 Bad Request**
 
-**Fehler-Responses:**
+  ```json
+  { "error": "Ungültige Adresse" }
+  { "error": "Ungültiges Adress-Format" }
+  ```
+* **401 Unauthorized**
 
-* **400 Bad Request** – ungültige Adresse oder Format:
+  ```json
+  { "error": "Nonce nicht gefunden" }
+  { "error": "Signatur ungültig" }
+  { "error": "Address mismatch" }
+  ```
 
-```json
-{ "error": "Ungültige Adresse" }
-{ "error": "Ungültiges Adress-Format" }
-```
+---
 
-* **401 Unauthorized** – fehlender Nonce oder Signatur ungültig bzw. Adress-Mismatch:
+### POST `/login`
 
-```json
-{ "error": "Nonce nicht gefunden" }
-{ "error": "Signatur ungültig" }
-{ "error": "Address mismatch" }
-```
+Login per E-Mail/Passwort mit optionalem 2FA (TOTP).
+
+* **URL:** `/login`
+* **Methode:** `POST`
+* **Auth:** keine
+* **Body (Form-Data oder JSON):**
+
+  | Feld     | Typ    | Beschreibung                              |
+  | -------- | ------ | ----------------------------------------- |
+  | email    | string | E-Mail des Nutzers                        |
+  | password | string | Klartext-Passwort                         |
+  | otp      | string | TOTP-Code, falls 2FA aktiviert (optional) |
+
+**Antworten:**
+
+* **200 OK**
+
+  ```json
+  {
+    "message": "Login erfolgreich",
+    "user": {
+      "id": 1,
+      "email": "alice@test.org",
+      "isOwner": false,
+      "organizationId": 42,
+      "wallet": "0xAbc123...def"
+    }
+  }
+  ```
+* **401 Unauthorized**
+
+  ```json
+  { "error": "Ungültige E-Mail oder Passwort" }
+  { "error": "2FA erforderlich" }
+  { "error": "Ungültiges OTP" }
+  ```
 
 ---
 
 ### POST `/logout`
 
-Loggt den aktuell eingeloggten Benutzer aus.
+Loggt den aktuellen Benutzer aus.
 
 * **URL:** `/logout`
 * **Methode:** `POST`
-* **Authentifizierung:** Cookie/Session (Flask-Login)
+* **Auth:** Session-Cookie
 
-**Erfolgs-Response (200 OK):**
+**Antwort:**
 
-```json
-{ "message": "Logout erfolgreich" }
-```
+* **200 OK**
+
+  ```json
+  { "message": "Logout erfolgreich" }
+  ```
 
 ---
 
 ### GET `/setup-2fa`
 
-Generiert (falls noch nicht vorhanden) ein neues TOTP-Secret für den eingeloggten Benutzer und liefert Secret, Provisioning-URI & QR-Code.
+Erzeugt OTP-Secret, Provisioning-URI und QR-Code.
 
 * **URL:** `/setup-2fa`
 * **Methode:** `GET`
-* **Authentifizierung:** Cookie/Session (benötigt Anmeldung)
+* **Auth:** Session-Cookie
 
-**Erfolgs-Response (200 OK):**
+**Antwort (200 OK):**
 
 ```json
 {
   "otp_secret": "JBSWY3DPEHPK3PXP",
-  "provisioning_uri": "otpauth://totp/DocNotary:alice%40test.org?secret=JBSWY3DPEHPK3PXP&issuer=DocNotary",
+  "provisioning_uri": "otpauth://totp/DocNotary:alice%40test.org?secret=…&issuer=DocNotary",
   "qr_code_png_base64": "iVBORw0KGgoAAAANSUhEUgAA..."
 }
-```
-
-**Fehler-Response (401 Unauthorized):**
-
-```json
-{ "error": "Authentication required" }
 ```
 
 ---
 
 ### POST `/user/2fa`
 
-Aktiviert oder deaktiviert 2-Faktor-Authentifizierung für den eingeloggten Benutzer.
+Aktiviert oder deaktiviert 2FA für den eingeloggten Nutzer.
 
 * **URL:** `/user/2fa`
 * **Methode:** `POST`
-* **Authentifizierung:** Cookie/Session (benötigt Anmeldung)
+* **Auth:** Session-Cookie
+* **Body (JSON):**
 
-**Request Body (JSON):**
+  ```json
+  { "enable": true }
+  ```
 
-```json
-{ "enable": true }   // true: 2FA aktivieren, false: 2FA deaktivieren
-}
-```
+**Antworten:**
 
-**Erfolgs-Responses (200 OK):**
+* **200 OK** (Aktivierung)
 
-* Bei Aktivierung (`enable=true`):
+  ```json
+  {
+    "message": "2FA aktiviert",
+    "otp_secret": "...",
+    "provisioning_uri": "...",
+    "qr_code_png_base64": "..."
+  }
+  ```
+* **200 OK** (Deaktivierung)
 
-```json
-{
-  "message": "2FA aktiviert",
-  "otp_secret": "JBSWY3DPEHPK3PXP",
-  "provisioning_uri": "otpauth://totp/DocNotary:alice%40test.org?secret=JBSWY3DPEHPK3PXP&issuer=DocNotary",
-  "qr_code_png_base64": "iVBORw0KGgoAAAANSUhEUgAA..."
-}
-```
-
-* Bei Deaktivierung (`enable=false`):
-
-```json
-{ "message": "2FA deaktiviert" }
-```
+  ```json
+  { "message": "2FA deaktiviert" }
+  ```
 
 ---
 
 ### GET `/user/profile`
 
-Gibt Profildaten des aktuell eingeloggten Nutzers zurück.
+Gibt Profildaten des aktuellen Nutzers zurück.
 
 * **URL:** `/user/profile`
 * **Methode:** `GET`
-* **Authentifizierung:** Cookie/Session (benötigt Anmeldung)
+* **Auth:** Session-Cookie
 
-**Erfolgs-Response (200 OK):**
+**Antwort (200 OK):**
 
 ```json
 {
@@ -221,201 +215,307 @@ Gibt Profildaten des aktuell eingeloggten Nutzers zurück.
   "organization": "TestOrg",
   "2faEnabled": true,
   "walletAddress": "0xAbc123...def",
-  "hasWallet": true
+  "isOwner": false
 }
 ```
 
 ---
 
-### GET `/org/allowed-addresses`
+## Notarisierung & Dokumentenverwaltung
 
-Gibt alle Wallet-Adressen der Nutzer der eigenen Organisation zurück.
-
-* **URL:** `/org/allowed-addresses`
-* **Methode:** `GET`
-* **Authentifizierung:** Cookie/Session (benötigt Anmeldung)
-
-**Erfolgs-Response (200 OK):**
-
-```json
-{
-  "allowedAddresses": [
-    "0xAbc123...def",
-    "0x456efc...789",
-    "0x111222...aaa"
-  ]
-}
-```
+> **Hinweis:** alle folgenden Endpoints erfordern Session-Cookie (Flask-Login) und sind unter `/api` registriert.
 
 ---
 
-## Notarisierung & Verifikation
+### POST `/hashes`
 
-*Alle folgenden Routen erfordern Authentifizierung (Cookie/Session via Flask-Login).*
+Berechnet `idHash` und `docHash` für ein Dokument.
 
-### POST `/api/notarize`
-
-Notarisiert ein Dokument in der Blockchain.
-
-* **URL:** `/api/notarize`
+* **URL:** `/hashes`
 * **Methode:** `POST`
-* **Authentifizierung:** Cookie/Session
+* **Auth:** Session-Cookie
 * **Form-Data:**
 
-  | Feld         | Typ    | Beschreibung                                                 |
-  | ------------ | ------ | ------------------------------------------------------------ |
-  | `file`       | File   | Zu notarisierende PDF- oder Binärdatei                       |
-  | `documentId` | String | Eindeutige ID, unter der das Dokument hinterlegt werden soll |
+  | Feld       | Typ    | Beschreibung             |
+  | ---------- | ------ | ------------------------ |
+  | file       | File   | Hochzuladende Datei      |
+  | documentId | string | Eindeutige Dokumenten-ID |
 
-**Erfolgs-Response (200 OK):**
+**Antworten:**
 
-```json
-{
-  "txHash": "0x6988abc123...fed",
-  "blockNumber": 42
-}
-```
+* **200 OK**
 
-**Fehler-Responses (400 Bad Request):**
+  ```json
+  {
+    "idHash": "0x…",
+    "docHash": "0x…"
+  }
+  ```
+* **400 Bad Request**
 
-```json
-{ "error": "No file provided" }
-{ "error": "No documentId provided" }
-{ "error": "Dokument darf nicht geändert werden" }
-{ "error": "Schon notariell hinterlegt" }
-```
+  ```json
+  { "error": "file und documentId nötig" }
+  ```
 
 ---
 
-### POST `/api/verify`
+### POST `/notarize/commit`
 
-Prüft, ob ein Dokument bereits notariell hinterliegt.
+Speichert das Dokument endgültig mit Transaktions-Hash ab.
 
-* **URL:** `/api/verify`
+* **URL:** `/notarize/commit`
 * **Methode:** `POST`
-* **Authentifizierung:** Cookie/Session
+* **Auth:** Session-Cookie
+* **Body (JSON):**
+
+  ```json
+  {
+    "idHash": "0x…",
+    "txHash": "0x…"
+  }
+  ```
+
+**Antworten:**
+
+* **200 OK**
+
+  ```json
+  { "success": true }
+  ```
+* **404 Not Found**
+
+  ```json
+  { "error": "Keine vorbereitete Datei gefunden" }
+  ```
+
+---
+
+### POST `/verify`
+
+Prüft, ob ein Dokument bereits notariell registriert wurde.
+
+* **URL:** `/verify`
+* **Methode:** `POST`
+* **Auth:** Session-Cookie
 * **Form-Data:**
 
-  | Feld   | Typ  | Beschreibung                      |
-  | ------ | ---- | --------------------------------- |
-  | `file` | File | Zu verifizierendes PDF/Binärdatei |
+  | Feld | Typ  | Beschreibung      |
+  | ---- | ---- | ----------------- |
+  | file | File | Zu prüfende Datei |
 
-**Erfolgs-Response (200 OK):** – Dokument ist notariell hinterlegt:
+**Antworten:**
 
-```json
-{ "verified": true, "timestamp": 1745919683 }
-```
+* **200 OK**
 
-**Fehler-Responses:**
+  ```json
+  { "verified": true, "timestamp": 1745919683 }
+  ```
+* **400 Bad Request**
 
-* **400 Bad Request** – kein File gesendet:
+  ```json
+  { "error": "No file provided" }
+  ```
+* **404 Not Found**
 
-```json
-{ "error": "No file provided" }
-```
-
-* **404 Not Found** – Dokument **nicht** hinterlegt (verified=false, Status 404):
-
-```json
-{ "verified": false }
-```
+  ```json
+  { "verified": false }
+  ```
 
 ---
 
-### GET `/api/documents`
+### GET `/documents`
 
-Listet alle Dokumente der Organisation des aktuellen Nutzers auf.
+Listet alle notariellen Dokumente der eigenen Organisation.
 
-* **URL:** `/api/documents`
+* **URL:** `/documents`
 * **Methode:** `GET`
-* **Authentifizierung:** Cookie/Session
+* **Auth:** Session-Cookie
 
-**Erfolgs-Response (200 OK):**
+**Antwort (200 OK):**
 
 ```json
 {
-  "orgChainAddress": "0xabc123...xyz",
-  "contractAddress": "0xdef456...uvw",
+  "orgChainAddress": "0xabc123…",
+  "contractAddress": "0xdef456…",
   "documents": [
     {
-      "idHash": "0xaaaa1111bbbb2222cccc3333dddd4444eeee5555ffff6666gggg7777hhhh8888",
-      "documentHash": "0xaaaabbbbcccc1111222233334444dddd",
+      "idHash": "0x…",
+      "documentHash": "0x…",
       "timestamp": 1745919683,
-      "txHash": "0xdeadbeefdeadbeefdeadbeefdeadbeef",
+      "isoTimestamp": "2025-05-18T12:34:56Z",
       "blockNumber": 42,
-      "downloadUrl": "/api/documents/0xaaaa1111bbbb2222cccc3333dddd4444eeee5555ffff6666gggg7777hhhh8888/download"
-    },
-    {
-      "idHash": "0x11112222333344445555666677778888aaaabbbbccccdddd1111222233334444",
-      "documentHash": "0x11112222333344445555666677778888",
-      "timestamp": 1745919700,
-      "txHash": "0xfeedfacefeedfacefeedfacefeedface",
-      "blockNumber": 43,
-      "downloadUrl": "/api/documents/0x11112222333344445555666677778888aaaabbbbccccdddd1111222233334444/download"
+      "txHash": "0x…",
+      "downloadUrl": "/documents/0x…/download"
     }
   ]
 }
 ```
 
-*Hinweis: Bei keinem Dokument liefert `documents` eine leere Liste.*
+---
+
+### GET `/documents/{idHash}/download`
+
+Lädt das zuletzt gespeicherte Dokument-Blob herunter.
+
+* **URL:** `/documents/{idHash}/download`
+* **Methode:** `GET`
+* **Auth:** Session-Cookie
+
+**Antworten:**
+
+* **200 OK**
+  Datei als Attachment `Content-Disposition: attachment; filename="{idHash}.pdf"`
+* **404 Not Found**
+  Kein Dokument gefunden.
 
 ---
 
-### GET `/api/documents/<string:idHash>/download`
+### GET `/stats`
 
-Lädt das zuletzt hochgeladene Dokument (Blob) für die angegebene `idHash` herunter.
+Stellt Statistiken zu Notarisierungen der Organisation bereit.
 
-* **URL:** `/api/documents/<string:idHash>/download`
+* **URL:** `/stats`
 * **Methode:** `GET`
-* **Authentifizierung:** Cookie/Session
+* **Auth:** Session-Cookie
 
-**Erfolgs-Response (200 OK):**
-
-* Datei-Download (PDF/Binärdaten)
-* Header `Content-Disposition: attachment; filename="<idHash>.pdf"`
-
-**Fehler-Response (404 Not Found):**
-
-* Kein Dokument mit dieser `idHash` gefunden
-
----
-
-### GET `/api/stats`
-
-Gibt Kennzahlen zur eigenen Organisation zurück.
-
-* **URL:** `/api/stats`
-* **Methode:** `GET`
-* **Authentifizierung:** Cookie/Session
-
-**Erfolgs-Response (200 OK):**
+**Antwort (200 OK):**
 
 ```json
 {
-  "orgName": "TestOrg",
-  "orgChainAddress": "0xabc123...xyz",
-  "contractAddress": "0xdef456...uvw",
-  "totalNotarizations": 10,
-  "firstNotarization": {
-    "documentHash": "0xaaaabbbbcccc11112222",
-    "timestamp": 1745919600
-  },
-  "latestNotarization": {
-    "documentHash": "0x9999aaaa0000bbbb1111",
-    "timestamp": 1745919700
-  }
+  "contractAddress": "0xdef456…",
+  "contractCreator": "0xowner…",
+  "deployBlock": 10,
+  "totalNotarizations": 5,
+  "firstNotarization": { "timestamp": 1745919600, "documentHash": "0x…" },
+  "latestNotarization": { "timestamp": 1745919700, "documentHash": "0x…" }
 }
 ```
 
-*Hinweis: Bei `totalNotarizations` = 0 sind `firstNotarization` und `latestNotarization` `null`.*
+---
+
+## Admin-Routen (Organisation-Owner)
+
+### GET `/orgs/{org_id}/users`
+
+Listet alle Nutzer einer Organisation auf (nur Owner).
+
+* **URL:** `/orgs/{org_id}/users`
+* **Methode:** `GET`
+* **Auth:** Session-Cookie + Owner-Rechte
+
+**Antwort (200 OK):**
+
+```json
+{
+  "users": [
+    { "id": 1, "email": "a@x.de", "wallet": "0x…", "is_owner": true }
+  ]
+}
+```
 
 ---
 
-## Allgemeine Hinweise
+### PUT `/users/{user_id}/wallet`
 
-* **Zeitstempel:** alle Zeiten im Unix-Epoch-Format (Sekunden seit 1970-01-01 UTC).
-* **Session-Cookie:** Der Login (`/login` oder `/login/wallet`) setzt ein Session-Cookie, das bei allen `/api`-Aufrufen mitsendet werden muss.
-* **Blockchain-Testnetzwerk:** Starte ein lokales Ethereum-Testnetzwerk (Hardhat oder Ganache) auf `localhost:8545` und deploye den Notary-Contract.
-* **CORS:** Bei Frontend unter anderer Origin ggf. CORS in `app/__init__.py` konfigurieren.
+Aktualisiert die Wallet-Adresse eines Nutzers (nur Owner).
+
+* **URL:** `/users/{user_id}/wallet`
+* **Methode:** `PUT`
+* **Auth:** Session-Cookie + Owner-Rechte
+* **Body (JSON):**
+
+  ```json
+  { "wallet": "0xNewAddress…" }
+  ```
+
+**Antworten:**
+
+* **200 OK**
+
+  ```json
+  { "wallet": "0xNewAddress…" }
+  ```
+* **400 Bad Request**
+
+  ```json
+  { "error": "Ungültige Adresse" }
+  ```
+* **403 Forbidden**
+  Kein Owner oder falsche Organisation.
 
 ---
+
+### POST `/orgs/{org_id}/contract`
+
+Setzt Smart-Contract-Adresse und optionalen Deploy-Block (nur Owner).
+
+* **URL:** `/orgs/{org_id}/contract`
+* **Methode:** `POST`
+* **Auth:** Session-Cookie + Owner-Rechte
+* **Body (JSON):**
+
+  ```json
+  {
+    "contractAddress": "0xContract…",
+    "deployBlock": 123
+  }
+  ```
+
+**Antworten:**
+
+* **200 OK**
+
+  ```json
+  {
+    "contractAddress": "0xContract…",
+    "deployBlock": 123
+  }
+  ```
+* **400 Bad Request**
+
+  ```json
+  { "error": "Keine contractAddress übergeben" }
+  { "error": "Ungültige Ethereum-Adresse" }
+  ```
+* **403 Forbidden**, **404 Not Found**
+
+---
+
+### GET `/get_contract_address`
+
+Gibt gespeicherte Contract-Adresse der Organisation und Org-ID zurück.
+
+* **URL:** `/get_contract_address`
+* **Methode:** `GET`
+* **Auth:** Session-Cookie
+
+**Antwort (200 OK):**
+
+```json
+{
+  "contractAddress": "0x…",
+  "organization_id": 42
+}
+```
+
+**404 Not Found**
+
+```json
+{ "error": "Keine Contract-Adresse für diese Organisation hinterlegt" }
+```
+
+---
+
+### GET `/get_org_id`
+
+Gibt die ID der Organisation des aktuellen Nutzers zurück.
+
+* **URL:** `/get_org_id`
+* **Methode:** `GET`
+* **Auth:** Session-Cookie
+
+**Antwort (200 OK):**
+
+```json
+{ "organization_id": 42 }
+```

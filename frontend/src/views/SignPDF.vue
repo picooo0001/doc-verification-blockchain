@@ -133,6 +133,8 @@ import { useToast } from 'vue-toastification'
 import { ethers }        from 'ethers'
 import NotaryArtifact     from '@artifacts/Notary.json'
 import api from '@/api'
+const sepoliaRpcUrl = import.meta.env.RPC_URL;
+
 
 const toast = useToast()
 const pdfFiles = ref([])
@@ -210,7 +212,7 @@ onMounted(() => {
   intervalId = setInterval(() => {
     loadStats()
     loadDocuments()
-  }, 15000)
+  },  60 * 1000)
 })
 onUnmounted(() => {
   clearInterval(intervalId)
@@ -272,10 +274,10 @@ async function submitToBackend() {
           params: [{
             chainId: '0xaa36a7',
             chainName: 'Sepolia Testnetz',
-            rpcUrls: ['https://sepolia.infura.io/v3/3bdc1b0ecd9f49fb8da028965c9683cb'],
+            rpcUrls: [RPC_URL],
             nativeCurrency: { name: 'SepoliaETH', symbol: 'SEP', decimals: 18 },
             blockExplorerUrls: ['https://sepolia.etherscan.io'],
-          }],
+          }],W
         })
         await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xaa36a7' }] })
       } catch (addErr) {

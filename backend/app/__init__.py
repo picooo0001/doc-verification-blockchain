@@ -7,29 +7,37 @@ from flask_login import LoginManager
 
 from .config import Config
 
-# Extensions
 db = SQLAlchemy()
 migrate = Migrate()
 bcrypt = Bcrypt()
 login_manager = LoginManager()
 
 def create_app(test_config: dict = None):
-    # 1) Basis-Config laden
+    """
+    Erzeugt und konfiguriert die Flask-Anwendung.
+
+    Lädt die Basis-Konfiguration, wendet optional Test-Konfigurationen an,
+    richtet CORS nur für http://localhost:5173 ein und aktiviert Credentials-Support.
+    Initialisiert alle Extensions (Datenbank, Migration, Bcrypt, Login-Manager),
+    definiert das Verhalten für nicht autorisierte Zugriffe und lädt Benutzer-Objekte.
+    Registriert anschließend die Notary- und Auth-Blueprints unter dem Prefix /api.
+
+    :param test_config: Optionales Dictionary mit Konfigurationsüberschreibungen (z.B. für Tests)
+    :type test_config: dict, optional
+    :return: Flask-Anwendung, fertig konfiguriert und registriert
+    :rtype: Flask
+    """
     app = Flask(__name__)
     CORS(app, 
          supports_credentials=True,
          origins=["http://localhost:5173"])
     app.config.from_object(Config)
-    # ▶ Entfernt: Config.init_app(app)
 
-    # 2) Test-Config (falls vorhanden) direkt überschreiben
     if test_config:
         app.config.update(test_config)
 
-    # 3) CORS konfigurieren – nur Anfragen von localhost:5173 erlauben
     CORS(app, resources={r"/*": {"origins": "http://localhost:5173", "supports_credentials": True}})
 
-    # Extensions initialisieren
     db.init_app(app)
     migrate.init_app(app, db)
     bcrypt.init_app(app)
@@ -45,7 +53,6 @@ def create_app(test_config: dict = None):
         from .models import User
         return User.query.get(int(user_id))
 
-    # Blueprints importieren und registrieren
     from .routes import bp as notary_bp
     from .auth import bp as auth_bp
 

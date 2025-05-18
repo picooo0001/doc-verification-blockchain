@@ -5,34 +5,40 @@ from .models import Organization
 from web3 import Web3, HTTPProvider
 from .config import Config
 
-with open(Config.CONTRACT_ABI_PATH) as f:
-    NOTARY_ABI = json.load(f)['abi']
+with open(Config.CONTRACT_ABI_PATH, 'r') as f:
+    try:
+        NOTARY_ABI = json.load(f)['abi']
+    except (KeyError, json.JSONDecodeError) as e:
+        raise RuntimeError(f"Fehler beim Laden des ABI von {Config.CONTRACT_ABI_PATH}: {e}")
 
-RPC_URL = os.getenv("RPC_URL")
-if not RPC_URL:
-    raise RuntimeError("Es ist keine RPC_URL in der Umgebung gesetzt.")
-
-w3 = Web3(HTTPProvider(RPC_URL))
+w3 = Web3(HTTPProvider(Config.RPC_URL))
 if not w3.is_connected():
-    raise RuntimeError(f"Kann keine Verbindung zu Ethereum-Node herstellen unter {RPC_URL}")
+    raise RuntimeError(f"Kann keine Verbindung zum Ethereum-Node herstellen: {Config.RPC_URL}")
 
-# Pfad zu deinem Hardhat-Artifact:
-# projectroot/contracts/artifacts/contracts/Notary.sol/Notary.json
-HERE = os.path.dirname(__file__)
-ARTIFACT_PATH = os.path.abspath(
-    os.path.join(
-        HERE,
-        '..',    # backend/app → backend
-        '..',    # backend → projectroot
-        'contracts',
-        'artifacts',
-        'contracts',
-        'Notary.sol',
-        'Notary.json'
+ARTIFACT_PATH = os.getenv('ARTIFACT_PATH')
+if not ARTIFACT_PATH:
+    here = os.path.dirname(__file__)
+    ARTIFACT_PATH = os.path.abspath(
+        os.path.join(here, '..', '..', 'contracts', 'artifacts',
+                     'contracts', 'Notary.sol', 'Notary.json')
     )
-)
+if not os.path.isfile(ARTIFACT_PATH):
+    raise RuntimeError(f"Artifact-Datei nicht gefunden unter: {ARTIFACT_PATH}")
 
 def get_notary_contract_for_org(org_or_address):
+    """
+    Liefert eine Web3-Contract-Instanz für den Notary-Smart-Contract einer Organisation.
+
+    Akzeptiert entweder ein Organization-Objekt oder direkt eine Contract-Adresse.
+    Validiert, dass eine Adresse vorliegt, wandelt sie in eine checksummierte Form um
+    und gibt das Contract-Objekt basierend auf dem vordefinierten NOTARY_ABI zurück.
+
+    :param org_or_address: Organisation oder Contract-Adresse der Notary-Instanz
+    :type org_or_address: Organization | str
+    :raises RuntimeError: Wenn keine Contract-Adresse hinterlegt ist
+    :return: Web3 Contract-Instanz für den Notary-Contract
+    :rtype: web3.contract.Contract
+    """
     if isinstance(org_or_address, Organization):
         ca = org_or_address.contract_address
     else:

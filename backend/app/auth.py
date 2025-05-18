@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
-from .models import User, Organization
+from .models import User
 from . import db
 import pyotp
 import qrcode
@@ -15,13 +15,51 @@ bp = Blueprint("auth", __name__)
 @bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    """
+    Loggt den aktuellen Benutzer aus der Sitzung aus.
+
+    Ruft logout_user() auf, um den Benutzer abzumelden, und gibt eine
+    JSON-Response mit einer Erfolgsmeldung zurück.
+
+    Rückgabe:
+        200: {"message": "Logout erfolgreich"} – Bestätigung der Abmeldung
+    """
     logout_user()
     return jsonify({"message": "Logout erfolgreich"}), 200
 
-# Normale Login Routen (Email + PW + (OTP))
-
 @bp.route("/login", methods=["POST"])
 def login():
+    """
+    Authentifizierungs-Endpoint für Benutzer.
+
+    Unterstützt sowohl JSON- als auch Form-POSTs mit den Feldern:
+        - email (str): E-Mail-Adresse des Benutzers
+        - password (str): Passwort des Benutzers
+        - otp (str, optional): One-Time-Password, falls 2FA aktiviert ist
+
+    Ablauf:
+        1. Liest E-Mail, Passwort und optional OTP aus JSON-Payload oder Form-Daten.
+        2. Sucht den Benutzer anhand der E-Mail und prüft das Passwort.
+           Bei Fehlschlag wird HTTP 401 mit Fehlermeldung zurückgegeben.
+        3. Wenn der Benutzer ein otp_secret besitzt, wird OTP-Verifikation verlangt.
+           - Fehlt das OTP: HTTP 401 mit {"error": "2FA erforderlich"}
+           - Ungültiges OTP: HTTP 401 mit {"error": "Ungültiges OTP"}
+        4. Bei erfolgreicher Authentifizierung wird der Benutzer eingeloggt
+           und eine JSON-Antwort mit Benutzerinformationen zurückgegeben.
+
+    Rückgabe:
+        - 200: {
+            "message": "Login erfolgreich",
+            "user": {
+                "id": int,
+                "email": str,
+                "isOwner": bool,
+                "organizationId": int,
+                "wallet": str|None
+            }
+          }
+        - 401: {"error": str} bei ungültigen Anmeldedaten oder fehlender/ungültiger 2FA
+    """
     if request.is_json:
         data     = request.get_json()
         email    = data.get("email")
@@ -58,8 +96,22 @@ def login():
 @login_required
 def setup_2fa():
     """
-    Generiert und liefert dem eingeloggten Nutzer sein OTP-Secret,
-    die Provisioning-URI und den QR-Code als Base64-PNG.
+    Generiert das OTP-Secret für den aktuellen Benutzer (falls noch nicht vorhanden),
+    erstellt die zugehörige Provisioning-URI für Authenticator-Apps und liefert 
+    einen QR-Code als Base64-kodiertes PNG.
+
+    Ablauf:
+        1. Holt das aktuelle Benutzerobjekt.
+        2. Erzeugt bei Bedarf ein neues otp_secret und speichert es in der Datenbank.
+        3. Erstellt mit pyotp eine Provisioning-URI (Issuer: "DocNotary", Nutzer-E-Mail als Name).
+        4. Generiert einen QR-Code aus der URI und kodiert ihn als Base64-PNG.
+
+    Rückgabe (JSON, HTTP 200):
+        {
+            "otp_secret": str,              # Das OTP-Secret für die 2FA
+            "provisioning_uri": str,        # URI zum Hinzufügen in Authenticator-Apps
+            "qr_code_png_base64": str       # QR-Code als Base64-kodiertes PNG
+        }
     """
     user = current_user
 
@@ -129,11 +181,33 @@ def update_2fa():
         user.otp_secret = None
         db.session.commit()
         return jsonify({"message": "2FA deaktiviert"}), 200
-    
-# Wallet Login:
-    
+        
 @bp.route("/login/nonce", methods=["GET"])
 def get_nonce():
+    """
+    Aktiviert oder deaktiviert die Zwei-Faktor-Authentifizierung (2FA) für den aktuellen Benutzer.
+
+    Erwartet ein JSON-Objekt mit dem Feld:
+        - enable (bool): True zum Aktivieren der 2FA, False zum Deaktivieren.
+
+    Bei enable=True:
+        1. Generiert (falls noch nicht vorhanden) ein neues OTP-Secret und speichert es in der DB.
+        2. Erstellt eine Provisioning-URI für Authenticator-Apps (Issuer "DocNotary").
+        3. Generiert einen QR-Code aus der URI und kodiert ihn als Base64-PNG.
+        4. Gibt zurück:
+            - message: "2FA aktiviert"
+            - otp_secret: das neue OTP-Secret
+            - provisioning_uri: URI für Authenticator
+            - qr_code_png_base64: QR-Code als Base64-kodiertes PNG
+
+    Bei enable=False:
+        - Entfernt das vorhandene OTP-Secret des Benutzers und speichert die Änderung.
+        - Gibt zurück:
+            - message: "2FA deaktiviert"
+
+    Rückgabe:
+        - 200: JSON-Antwort mit den jeweiligen Feldern bei erfolgreicher (De)Aktivierung.
+    """
     raw = request.args.get("address", "")
     if not w3.is_address(raw):
         return jsonify({"error": "Ungültige Adresse"}), 400
@@ -155,6 +229,38 @@ def get_nonce():
 
 @bp.route("/login/wallet", methods=["POST"])
 def login_wallet():
+    """
+    Authentifiziert einen Benutzer mittels Ethereum-Wallet-Signatur.
+
+    Erwartet ein JSON-Objekt mit den Feldern:
+        - address (str): Ethereum-Adresse des Nutzers
+        - signature (str): Signatur über die zuvor generierte Nonce
+
+    Ablauf:
+        1. Validiert die übergebene Adresse; gibt 400 bei ungültigem Format zurück.
+        2. Sucht den Nutzer anhand der checksummierten Adresse und prüft, ob eine Nonce vorhanden ist.
+           - Fehlende Nonce oder kein Nutzer: 401 mit {"error": "Nonce nicht gefunden"}.
+        3. Erstellt eine Nachricht aus der Nonce und versucht, die Signatur wiederherzustellen.
+           - Fehlschlag: 401 mit {"error": "Signatur ungültig"}.
+        4. Vergleicht die wiederhergestellte Adresse mit der übergebenen:
+           - Abweichung: 401 mit {"error": "Address mismatch"}.
+        5. Setzt die Nonce auf None, speichert die Änderung, loggt den Nutzer ein und liefert
+           eine JSON-Antwort mit Benutzerinfos.
+
+    Rückgabe:
+        - 200: {
+            "message": "Login erfolgreich",
+            "user": {
+                "id": int,
+                "email": str,
+                "isOwner": bool,
+                "organizationId": int,
+                "wallet": str
+            }
+          }
+        - 400: {"error": "Ungültige Adresse" | "Ungültiges Adress-Format"}
+        - 401: {"error": "Nonce nicht gefunden" | "Signatur ungültig" | "Address mismatch"}
+    """
     data      = request.get_json() or {}
     raw       = data.get("address", "")
     signature = data.get("signature")
@@ -194,10 +300,25 @@ def login_wallet():
         }
     }), 200
 
-#User Profile fetching:
 @bp.route("/user/profile", methods=["GET"])
 @login_required
 def user_profile():
+    """
+    Gibt das Profil des aktuell angemeldeten Benutzers zurück.
+
+    Liest die E-Mail, den Organisationsnamen, den 2FA-Status, die Wallet-Adresse
+    und die Owner-Rolle des aktuellen Nutzers aus und gibt diese Informationen
+    als JSON-Response zurück.
+
+    Rückgabe (HTTP 200):
+        {
+            "email": str,               # E-Mail-Adresse des Nutzers
+            "organization": str,        # Name der Organisation
+            "2faEnabled": bool,         # True, wenn 2FA aktiviert ist
+            "walletAddress": str|None,  # Wallet-Adresse oder None, falls nicht gesetzt
+            "isOwner": bool             # True, wenn der Nutzer Owner-Rechte besitzt
+        }
+    """
     wallet = current_user.wallet_address
     return jsonify({
         "email": current_user.email,

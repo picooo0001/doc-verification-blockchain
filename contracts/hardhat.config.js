@@ -6,8 +6,8 @@ module.exports = {
   solidity: '0.8.28',
   networks: {
     sepolia: {
-      url: process.env.RPC_URL,         // z.B. https://sepolia.infura.io/v3/...
-      accounts: [process.env.DEPLOYER_KEY], // Dein privater Key des Owner-Accounts
+      url: process.env.RPC_URL,         
+      accounts: [process.env.DEPLOYER_KEY],
     },
   },
   etherscan: {
